@@ -1,4 +1,4 @@
-/* генерация квартальной сетки и статистики на данных OpenStreetMap. Алгоритм 3: 
+/* генерация квартальной сетки и статистики на данных OpenStreetMap. Алгоритм 2.7: 
 https://docs.google.com/document/d/1y9j93d0SrOJo7WOOQ2IxIj72nmbNIem28eN_J3kTDXc/edit 
 + данные по году постройки из МИН ЖКХ */
 
@@ -11,7 +11,7 @@ https://docs.google.com/document/d/1y9j93d0SrOJo7WOOQ2IxIj72nmbNIem28eN_J3kTDXc/
 drop table if exists city;
 create temp table city as
 select id_gis::smallint, geom from index2019.data_boundary
---where id_gis = 884 -- дебаг
+--where id_gis = 777 -- дебаг
 ;
 create index on city(id_gis);
 create index on city using gist(geom);
@@ -108,8 +108,12 @@ from (
 	) -- фильтруем по типу
 ) a;
 
-/* первое приближение кварталов - очерчиваем 50 м. буферы от зданий */
-/* не актуально - первое приближение теперь предрасчитано */
+create index on roads(id_gis);
+create index on roads(type);
+create index on roads using gist(geom);
+
+
+/* первое приближение кварталов - очерчиваем 50 м. буферы от зданий (уже предрасчитано) */
 drop table if exists building_buffers;
 create temp table building_buffers as 
 select
@@ -118,12 +122,11 @@ select
 from city c 
 join russia.city_built_area_light b using(id_gis);
 
+create index on building_buffers(id_gis);
+create index on building_buffers using gist(geom);
 
 /* вырезаем воду (полигональную и линейную) и железнодорожные пути */
-/* собираем воду */
---drop table if exists boundary_clip;
---create temp table boundary_clip as 
-
+/* собираем площадную воду */
 drop table if exists waterareas;
 create temp table waterareas as
 select b.id_gis, w.geom
@@ -133,6 +136,7 @@ join osm.waterareas_ru w
 		and st_area(w.geom::geography) > 20000 -- отбрасываем водоёмы меньше 2 га
 		and st_isvalid(w.geom); -- check geometry
 
+/* собираем линейную воду с буфером */
 drop table if exists waterways;
 create temp table waterways as		
 select b.id_gis, st_multi(st_buffer(w.geom::geography, 10)::geometry)::geometry(multipolygon, 4326) geom
@@ -142,6 +146,7 @@ join osm.waterways_ru w
 		and w.tunnel = '' -- check for waterways in tunnels
 		and st_isvalid(w.geom); -- check geometry	
 
+/* собираем линейную жд пути с буфером */
 drop table if exists railway_buffer;
 create temp table railway_buffer as	
 select b.id_gis, (st_buffer(r.geom::geography, (case when r.type = 'tram' then 5 else 10 end)))::geometry geom -- разной ширины буфер для трамвая и железной дороги
@@ -152,6 +157,7 @@ join osm.railroads_ru r
 		and r.tunnel != 1 and r.bridge != 1 -- отбрасываем мосты и туннели
 		and st_isvalid(r.geom); -- check geometry
 
+/* собираем ысё вышеперечисленное в обин объект */
 drop table if exists area_union;
 create temp table area_union as			
 select id_gis, st_buffer(st_collect(geom), 0) geom
@@ -162,12 +168,14 @@ from (
 ) un
 group by id_gis;
 
+/* вырезаем ысё вышесобранное из буфера от зданий */
 drop table if exists boundary_clip;
 create temp table boundary_clip as 
 select b.id_gis, st_difference(st_collectionextract(st_makevalid(b.geom), 3), st_collectionextract(st_makevalid(l.geom), 3)) geom
 from building_buffers b
 left join area_union l using(id_gis);
 
+create index on boundary_clip(id_gis);
 create index on boundary_clip using gist(geom);
 
 /* подготовка квартальной сетки */
@@ -178,23 +186,38 @@ from boundary_clip b
 join roads r using(id_gis)
 group by b.id_gis, b.geom;
 
+create index on split(id_gis);
 create index on split using gist(geom);
 
 /* отбивка буфера и фильтрация кварталов по площади и "ширине" */
 drop table if exists quater_raw;
 create temp table quater_raw as 
+select b.id_gis, (st_dump(st_buffer(st_buffer(q.geom::geography, -5), 5,'endcap=square join=mitre')::geometry)).geom::geometry(polygon, 4326) geom
+from boundary_clip b
+join split q
+	on b.id_gis = q.id_gis
+		and st_intersects(b.geom, q.geom)
+where
+	not st_isempty(st_buffer(q.geom::geography, -8)::geometry)
+	and	st_area(q.geom::geography) > 200
+--			and	st_area(q.geom::geography) <= 800000 -- максимально допустимый размер микрорайона по Градостроительному кодексу
+;
+
+drop table if exists quater_raw2;
+create temp table quater_raw2 as
+select id_gis, geom
+from quater_raw
+where st_isempty(st_buffer(geom::geography, -15)::geometry)
+union all 
 select id_gis, geom
 from (
-	select b.id_gis, (st_dump(st_buffer(st_buffer(q.geom::geography, -5), 5,'endcap=square join=mitre')::geometry)).geom::geometry(polygon, 4326) geom
-	from boundary_clip b
-	join split q
-		on b.id_gis = q.id_gis
-			and st_intersects(b.geom, q.geom)
-	where
-		not st_isempty(st_buffer(q.geom::geography, -8)::geometry)
-		and	st_area(q.geom::geography) > 200
---			and	st_area(q.geom::geography) <= 800000 -- максимально допустимый размер микрорайона по Градостроительному кодексу
-) q;
+	select id_gis, (st_dump(st_buffer(st_buffer(st_buffer(geom::geography, -15), 10, 'endcap=square join=mitre'), 5, 'quad_segs=1')::geometry)).geom::geometry(polygon, 4326) geom
+	from quater_raw
+) q
+where st_area(q.geom::geography) > 500;
+
+create index on quater_raw2(id_gis);
+create index on quater_raw2 using gist(geom);
 
 drop table if exists raw_quater;
 create temp table raw_quater as
@@ -207,15 +230,7 @@ select
 			then q.geom
 		else st_intersection(b.geom, q.geom)
 	end)::geometry(multipolygon, 4326) geom
-from (
-	select id_gis, geom from quater_raw where st_isempty(st_buffer(geom::geography, -15)::geometry)
-	union all 
-	select id_gis, geom from (
-		select id_gis, (st_dump(st_buffer(st_buffer(st_buffer(geom::geography, -15), 10, 'endcap=square join=mitre'), 5, 'quad_segs=1')::geometry)).geom::geometry(polygon, 4326) geom
-		from quater_raw
-	) q
-	where st_area(q.geom::geography) > 500
-) q
+from quater_raw2 q
 join index2019.data_boundary b
 on b.id_gis = q.id_gis
 	and st_intersects(b.geom, q.geom);
