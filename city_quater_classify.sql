@@ -2,10 +2,9 @@
 https://docs.google.com/document/d/1y9j93d0SrOJo7WOOQ2IxIj72nmbNIem28eN_J3kTDXc/edit 
 + данные по году постройки из МИН ЖКХ */
 
-/* время расчёта ~ 1 часа для Москвы или Санкт-Петербурга */
+/* время расчёта ~ 4 часа для всех городов России */
 
 /* to do */
--- 1. Разобраться с SQL Error [XX000]: ОШИБКА: GEOSUnaryUnion: TopologyException: Input geom 0 is invalid: Self-intersection at or near point 61.689555322734968 54.128272271358988 at 61.689555322734968 54.128272271358988
 
 /* !!! дебаг - задаём город !!! */
 drop table if exists city;
