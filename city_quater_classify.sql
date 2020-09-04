@@ -1,16 +1,17 @@
-/* генерация квартальной сетки и статистики на данных OpenStreetMap. Алгоритм 2.7: 
-https://docs.google.com/document/d/1y9j93d0SrOJo7WOOQ2IxIj72nmbNIem28eN_J3kTDXc/edit 
+/* генерация квартальной сетки и статистики на данных OpenStreetMap.
+Алгоритм: https://docs.google.com/document/d/1y9j93d0SrOJo7WOOQ2IxIj72nmbNIem28eN_J3kTDXc/edit 
 + данные по году постройки из МИН ЖКХ */
 
-/* время расчёта ~ 4 часа для всех городов России */
+/* время расчёта ~ 3.5 часа для всех городов России */
 
 /* to do */
+-- 1. Полностью перенести механизм сопоставления с реестром ОКН в скрипт типизации зданий
 
 /* !!! дебаг - задаём город !!! */
 drop table if exists city;
 create temp table city as
 select id_gis::smallint, geom from index2019.data_boundary
---where id_gis = 777 -- дебаг
+--where id_gis = 1082 -- дебаг
 ;
 create index on city(id_gis);
 create index on city using gist(geom);
@@ -261,12 +262,12 @@ select
 	coalesce(count(b.*) filter(where b.building_type = 'igs'), 0)::smallint building_igs_count,
 	coalesce(count(b.*) filter(where b.building_type = 'other'), 0)::smallint building_other_count,
 
-	count(b.*) filter(where b.build_year <= 1917 or o.id is not null) old_building_count,
+	count(b.*) filter(where b.built_year <= 1917 or o.id is not null) old_building_count,
 
 	percentile_disc(0.5) within group(order by b.levels) filter(where b.building_type = 'mkd') mkd_median_level,
 	percentile_disc(0.5) within group(order by b.levels) filter(where b.building_type = 'other') other_median_level,
-	percentile_disc(0.5) within group(order by b.build_year) filter(where b.building_type <> 'other') median_built_year,
-	mode() within group(order by b.build_year) filter(where b.building_type <> 'other') mode_built_year
+	percentile_disc(0.5) within group(order by b.built_year) filter(where b.building_type <> 'other') median_built_year,
+	mode() within group(order by b.built_year) filter(where b.building_type <> 'other') mode_built_year
 from raw_quater q
 join russia.building_classify b
 	on q.id_gis = b.id_gis
@@ -278,8 +279,8 @@ group by q.id, q.id_gis, q.area_ha, q.geom;
 
 
 /* классификация кварталов по типам среды на основе расчитанных показателей */
-drop table if exists russia.city_quater_type_v7;
-create table russia.city_quater_type_v7 as
+drop table if exists russia.city_quater_type;
+create table russia.city_quater_type as
 select
 	*,
 	case
@@ -287,7 +288,7 @@ select
 			or building_mkd_count + building_igs_count < 3 -- отбрасываем нежилые кварталы с 1-2 жилыми домами
 				and building_count > 6
 			then 'Нежилая городская среда'
-		when old_building_count > 0.6 * building_mkd_count
+		when old_building_count >= 0.7 * building_mkd_count
 			and footprint_mkd_ha > footprint_igs_ha
 			and building_mkd_count + building_igs_count > 0.2 * building_count -- !!! допущение
 			then 'Историческая смешанная городская среда'
