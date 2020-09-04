@@ -1,14 +1,13 @@
 /* типология зданий на основе OpenStreetMap, Альтермага и dom.mingkh.ru */
-/* версия 3 */
---/* время расчёта ~ 1 час на всю Россию */ ???
+/* время расчёта ~ 3.5 часа. на всю Россию  - фильтрация ОСМ от наложений сильно замедлила процесс */
 /* to do: */
--- 1. Убрать задублированную геометрию из OpenStreetMap (см. Челябинск - угловые дома в частном секторе)
+-- 1. Зачистка дубликатов ОСМ прошла с некоторыми потерями среди мирного населения. Вроде, не критично. Но надо попробовать что-то с этим сделать.
 
 /* !!! дебаг - задаём город !!! */
 drop table if exists city;
 create temp table city as
 select id_gis::smallint, geom from index2019.data_boundary
-where id_gis = 1082 -- дебаг
+--where id_gis = 1082 -- дебаг
 ;
 create index on city(id_gis);
 create index on city using gist(geom);
@@ -46,7 +45,51 @@ create index on mingkh(floor);
 create index on mingkh using gist(geom);
 create index on mingkh using gist((geom::geography));
 
---explain
+
+/* зачищаем здания OpenStreetMap от накладывающихся частей */
+/* выбираем все здания на искомый город */
+drop table if exists osm;
+create temp table osm as
+select b.* from city c
+join index2019.data_building b using(id_gis);
+
+create index on osm(id_gis);
+create index on osm(area_m);
+create index on osm(id);
+create index on osm using gist(geom);
+
+/* пересекаем таблицу саму с собой, сравниваем накладывающуюся геометрию */
+drop table if exists compare;
+create temp table compare as
+select
+	s1.*,
+--	s2.id s2_id --дебаг
+	case 
+		when st_area(st_intersection(s1.geom, s2.geom)::geography) > 0.9 * s2.area_m -- наложение > 90% от площади второй фигуры - помечаем первую как большую
+			then true
+		when s2.id is null -- нет пересечений с другими объектами - помечаем отсутствием значения
+			then null 
+		else false -- помечаем первую как меньшую
+	end biggest
+from osm s1
+left join osm s2 
+	on s1.id_gis = s2.id_gis
+		and st_intersects(s1.geom, s2.geom)
+		and st_area(st_intersection(s1.geom, s2.geom)::geography) > 0.1 * s2.area_m  -- наложение < 10% от площади второй фигуры - не рассматриваем
+		and s1.area_m >= s2.area_m -- первая всегда больше или равна по площади второй
+		and s1.id <> s2.id;
+
+create index on compare(biggest);
+
+/* отфильтровываем здания которые покрывают собой другие здания */
+drop table if exists building_filtered;
+create temp table building_filtered as 
+select * from compare where biggest is false or biggest is null;
+
+create index on building_filtered(id_gis);
+create index on building_filtered(type);
+create index on building_filtered(levels);
+
 /* классификация начинается здесь */
 /* первая итерация - классификация по OpenStreetMap */
 drop table if exists building1;
@@ -81,8 +124,7 @@ select
 		else null 
 	end levels_source,
 	b.geom
-from city c
-join index2019.data_building b using(id_gis);
+from building_filtered b;
 
 create index on building1(id_gis);
 create index on building1(building_type);
@@ -321,6 +363,7 @@ left join lateral (
 alter table russia.building_classify drop column id;
 alter table russia.building_classify add column id serial primary key;
 create index on russia.building_classify using gist(geom);
+create index on russia.building_classify using gist((geom::geography));
 create index on russia.building_classify (levels);
 create index on russia.building_classify (built_year);
 create index on russia.building_classify (building_type);
