@@ -1,0 +1,55 @@
+{
+	"folders": {},
+	"connections": {
+		"postgres-jdbc-174605c68d9-248a2ec40405f45d": {
+			"provider": "postgresql",
+			"driver": "postgres-jdbc",
+			"name": "gisdb.strelkakb.ru - editor",
+			"save-password": true,
+			"read-only": false,
+			"configuration": {
+				"host": "gisdb.strelkakb.ru",
+				"port": "5433",
+				"database": "kbpvdb",
+				"url": "jdbc:postgresql://gisdb.strelkakb.ru:5433/kbpvdb",
+				"home": "postgresql-x64-11",
+				"type": "dev",
+				"provider-properties": {
+					"@dbeaver-show-non-default-db@": "true",
+					"@dbeaver-show-template-db@": "false",
+					"postgresql.dd.plain.string": "false",
+					"postgresql.dd.tag.string": "false"
+				},
+				"auth-model": "native"
+			}
+		}
+	},
+	"virtual-models": {
+		"postgres-jdbc-174605c68d9-248a2ec40405f45d": {
+			"kbpvdb": {
+				"russia": {
+					":city_boundary": {
+						"description": "city,region_name"
+					},
+					":rzd_railway_station_building": {
+						"properties": {
+							"erd.diagram.state": {
+								"serialized": "<diagram version=\"1\" name=\"rzd_railway_station_building\" time=\"202008182318\"><entities><data-source id=\"postgres-jdbc-16ecab93252-4045234215140d72\"><entity id=\"1\" name=\"rzd_railway_station_building\" fq-name=\"russia.rzd_railway_station_building\" order=\"0\" color-bg=\"255,128,64\" x=\"20\" y=\"239\"><path name=\"russia\"/><path name=\"kbpvdb\"/></entity><entity id=\"2\" name=\"city_boundary\" fq-name=\"russia.city_boundary\" order=\"1\" x=\"462\" y=\"305\"><path name=\"russia\"/><path name=\"kbpvdb\"/></entity><entity id=\"3\" name=\"data_okn\" fq-name=\"index2019.data_okn\" order=\"2\" color-bg=\"204,192,184\" x=\"231\" y=\"445\"><path name=\"index2019\"/><path name=\"kbpvdb\"/></entity><entity id=\"4\" name=\"rzd_railway_station\" fq-name=\"russia.rzd_railway_station\" order=\"3\" x=\"237\" y=\"20\"><path name=\"russia\"/><path name=\"kbpvdb\"/></entity></data-source></entities><relations><relation name=\"fk_id_gis\" fq-name=\"russia.rzd_railway_station_building.fk_id_gis\" type=\"fk\" pk-ref=\"2\" fk-ref=\"1\"/><relation name=\"fk_id_gis\" fq-name=\"russia.rzd_railway_station.fk_id_gis\" type=\"fk\" pk-ref=\"2\" fk-ref=\"4\"/><relation name=\"fk_okn_native_id\" fq-name=\"russia.rzd_railway_station_building.fk_okn_native_id\" type=\"fk\" pk-ref=\"3\" fk-ref=\"1\"/><relation name=\"fk_station_id\" fq-name=\"russia.rzd_railway_station_building.fk_station_id\" type=\"fk\" pk-ref=\"4\" fk-ref=\"1\"/></relations></diagram>"
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"connection-types": {
+		"dev": {
+			"name": "Development",
+			"color": "255,255,255",
+			"description": "Regular development database",
+			"auto-commit": true,
+			"confirm-execute": false,
+			"confirm-data-change": false
+		}
+	}
+}
