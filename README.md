@@ -1,6 +1,6 @@
 # SQL-scripts
 SQL скрипты, наработанные в процессе под разные задачи
 
-building_classify  - типология застройки на данных OpenStreetMap, Альтермага и МинЖКХ
+RZD  - всё, что связано с проектом по РЖД
 
-cyty_quater_classify - типология кварталов на данных  OpenStreetMap и building_classify
+Urban classification - типизация городской застройки и кварталов
