@@ -22,6 +22,52 @@
 				},
 				"auth-model": "native"
 			}
+		},
+		"postgres-jdbc-174605c80af-3a434c228eadb29": {
+			"provider": "postgresql",
+			"driver": "postgres-jdbc",
+			"name": "gisdb.strelkakb.ru - admin",
+			"save-password": true,
+			"read-only": false,
+			"configuration": {
+				"host": "gisdb.strelkakb.ru",
+				"port": "5433",
+				"database": "kbpvdb",
+				"url": "jdbc:postgresql://gisdb.strelkakb.ru:5433/kbpvdb",
+				"home": "postgresql-x64-11",
+				"type": "dev",
+				"provider-properties": {
+					"@dbeaver-show-non-default-db@": "true",
+					"@dbeaver-show-template-db@": "false",
+					"postgresql.dd.plain.string": "false",
+					"postgresql.dd.tag.string": "false"
+				},
+				"auth-model": "native"
+			}
+		},
+		"postgres-jdbc-174608af95f-402660996dd8d69b": {
+			"provider": "postgresql",
+			"driver": "postgres-jdbc",
+			"name": "local PG12",
+			"save-password": true,
+			"show-system-objects": true,
+			"read-only": false,
+			"configuration": {
+				"host": "localhost",
+				"port": "5433",
+				"database": "postgres",
+				"url": "jdbc:postgresql://localhost:5433/postgres",
+				"home": "postgresql-x64-12",
+				"type": "dev",
+				"provider-properties": {
+					"@dbeaver-show-non-default-db@": "true",
+					"@dbeaver-show-template-db@": "false",
+					"postgresql.dd.plain.string": "false",
+					"postgresql.dd.tag.string": "false"
+				},
+				"auth-model": "native",
+				"handlers": {}
+			}
 		}
 	},
 	"virtual-models": {
