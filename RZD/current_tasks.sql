@@ -41,15 +41,17 @@ update russia.rzd_railway_station_building rsbo
 		select 
 			r1.id,
 			r1.name,
-			st_distance(r1.geom::geography, r2.geom::geography) dist 
+			round(st_distance(r1.geom::geography, r2.geom::geography)::numeric) dist,
+			r1.geom
 		from russia.rzd_railway_station_building r1
 		left join lateral (
 			select id, geom
 			from russia.rzd_railway_station_building r2
-			where st_dwithin(r1.geom::geography, r2.geom::geography, 5000)
+			where st_dwithin(r1.geom::geography, r2.geom::geography, 10000)
 				and r1.id <> r2.id
 				and r1.id_gis = r2.id_gis
 			order by r1.geom::geography <-> r2.geom::geography
 			) r2 on true
-		)
-	)
+		) rsb
+		where rsbo.id = rsb.id
+	
