@@ -21,6 +21,9 @@
 					"postgresql.dd.tag.string": "false"
 				},
 				"auth-model": "native"
+			},
+			"custom-properties": {
+				"gis.geometry.viewer.id": "browser"
 			}
 		},
 		"postgres-jdbc-174605c80af-3a434c228eadb29": {
@@ -65,8 +68,7 @@
 					"postgresql.dd.plain.string": "false",
 					"postgresql.dd.tag.string": "false"
 				},
-				"auth-model": "native",
-				"handlers": {}
+				"auth-model": "native"
 			}
 		}
 	},
@@ -75,7 +77,8 @@
 			"kbpvdb": {
 				"russia": {
 					":city_boundary": {
-						"description": "city,region_name"
+						"description": "city,region_name",
+						"constraints": {}
 					},
 					":rzd_railway_station_building": {
 						"properties": {

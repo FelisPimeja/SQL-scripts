@@ -9,11 +9,4 @@
 	<natures>
 		<nature>org.jkiss.dbeaver.DBeaverNature</nature>
 	</natures>
-	<linkedResources>
-		<link>
-			<name>Scripts/RZD</name>
-			<type>2</type>
-			<location>//C:/Users/apetrov/git/SQL-scripts/RZD/</location>
-		</link>
-	</linkedResources>
 </projectDescription>

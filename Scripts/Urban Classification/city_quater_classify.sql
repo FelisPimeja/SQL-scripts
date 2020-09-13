@@ -6,12 +6,13 @@
 
 /* to do */
 -- 1. Полностью перенести механизм сопоставления с реестром ОКН в скрипт типизации зданий
+-- 2. Проверить почему osm типы house, detached не конвертировался в igs
 
 /* !!! дебаг - задаём город !!! */
 drop table if exists city;
 create temp table city as
 select id_gis::smallint, geom from index2019.data_boundary
---where id_gis = 1082 -- дебаг
+where id_gis = 1084 -- дебаг
 ;
 create index on city(id_gis);
 create index on city using gist(geom);
@@ -157,7 +158,7 @@ join osm.railroads_ru r
 		and r.tunnel != 1 and r.bridge != 1 -- отбрасываем мосты и туннели
 		and st_isvalid(r.geom); -- check geometry
 
-/* собираем ысё вышеперечисленное в обин объект */
+/* собираем ысё вышеперечисленное в один объект */
 drop table if exists area_union;
 create temp table area_union as			
 select id_gis, st_buffer(st_collect(geom), 0) geom
@@ -263,6 +264,8 @@ select
 	coalesce(count(b.*) filter(where b.building_type = 'other'), 0)::smallint building_other_count,
 
 	count(b.*) filter(where b.built_year <= 1917 or o.id is not null) old_building_count,
+	
+	percentile_disc(0.5) within group(order by b.area_m2) building_median_area_m2,
 
 	percentile_disc(0.5) within group(order by b.levels) filter(where b.building_type = 'mkd') mkd_median_level,
 	percentile_disc(0.5) within group(order by b.levels) filter(where b.building_type = 'other') other_median_level,
@@ -279,8 +282,8 @@ group by q.id, q.id_gis, q.area_ha, q.geom;
 
 
 /* классификация кварталов по типам среды на основе расчитанных показателей */
-drop table if exists russia.city_quater_type;
-create table russia.city_quater_type as
+drop table if exists classify_v7;
+create temp table classify_v7 as
 select
 	*,
 	case
@@ -340,3 +343,215 @@ select
 from quater_stat
 where building_count > 1 -- отбрасываем кварталы с одним зданием...
 ;
+
+create index on classify_v7(id_gis);
+create index on classify_v7(quater_class);
+create index on classify_v7(building_median_area_m2);
+create index on classify_v7 using gist(geom);
+
+-- Пытаемся доклассифицировать здания
+drop table if exists building_class2;
+create temp table building_class2 as
+select distinct on (b.id)
+	b.id_gis,
+	q.id quater_id,
+	b.osm_type,
+	case 
+		when (q.quater_class = 'Нежилая городская среда' or q.quater_class is null)
+			and q.building_median_area_m2 <= 250
+			and b.area_m2 <= 300
+			and b.osm_type = 'yes'
+			then 'igs'::varchar
+		/* часть которую нужно будет перенести в общую классификацию зданий */
+		when b.osm_type = 'house' and b.building_type = 'other'
+			then 'igs'::varchar
+		when b.osm_type = 'detached' and b.building_type = 'other'
+			then 'igs'::varchar
+		when b.osm_type = 'garages' or b.osm_type = 'garage'
+			or (
+				b.area_m2 >= 500
+					and st_isempty(st_buffer(b.geom::geography, -4)::geometry)
+			)
+			then 'garage'::varchar
+		when b.osm_type = 'school'
+			then 'school'::varchar
+		when b.osm_type = 'kindergarten'
+			then 'kindergarten'::varchar
+		when b.osm_type = 'university'
+			then 'university'::varchar
+		when b.osm_type in ('industrial', 'tank', 'tanks')
+			then 'industrial'::varchar
+		when b.osm_type = 'warehouse'
+			then 'warehouse'::varchar
+		when b.osm_type = 'office'
+			then 'office'::varchar
+		when b.osm_type = 'parking'
+			then 'parking'::varchar
+		when b.osm_type in ('service', 'shed', 'transformer')
+			then 'service'::varchar
+		when b.osm_type in ('shop', 'store', 'supermarket')
+			then 'shop'::varchar
+		when b.osm_type = 'retail' or b.osm_type = 'commercial'
+			then 'commercial'::varchar
+		else b.building_type
+	end building_type,
+	case 
+		when (q.quater_class = 'Нежилая городская среда' or q.quater_class is null)
+			and q.building_median_area_m2 <= 250
+			and b.area_m2 <= 300
+			and b.osm_type = 'yes'
+			then true::bool
+		when (
+			b.area_m2 >= 500
+				and st_isempty(st_buffer(b.geom::geography, -4)::geometry)
+		)
+			then true::bool
+		else false::bool
+	end new_flag,
+	b.building_type_source,
+	b.built_year,
+	b.built_year_source,
+	b.population,
+	b.population_source,
+	b.levels,
+	b.levels_source,
+	b.area_m2,
+	b.geom,
+	b.okn_id,
+	b.id
+from russia.building_classify b
+join classify_v7 q
+	on q.id_gis = b.id_gis 
+		and st_intersects(q.geom, b.geom) -- потом переделать с учётом случаем неполного вхождения
+;
+
+-- Записываем новые классифицированные домики
+drop table if exists street_classify.building_classify_2;
+create table street_classify.building_classify_2 as
+select * from building_class2;
+
+create index on street_classify.building_classify_2(id_gis);
+create index on street_classify.building_classify_2(building_type);
+
+drop table if exists street_classify.cluster_1084;
+create table street_classify.cluster_1084 as
+select
+	b.*,
+	st_clusterdbscan(b.geom, 0.0005, 4) over(partition by b.quater_id, b.building_type) cid
+from building_class2 b
+join classify_v7 q
+	on b.quater_id = q.id
+		and (q.quater_class = 'Нежилая городская среда' or q.quater_class is null)
+;
+
+
+
+-- перерасчёт кварталов
+/* расчёт основных показателей */
+drop table if exists quater_stat2;
+create temp table quater_stat2 as 
+select
+	q.*,
+	case 
+		when max(b.id) filter(where b.building_type <> 'other') is not null
+			then true
+		else false
+	end residential_function,
+	coalesce(round((sum(b.area_m2))::numeric / 10000, 2), 0) footprint_ha,
+	coalesce(round((sum(b.area_m2) filter(where b.building_type = 'mkd'))::numeric / 10000, 2), 0) footprint_mkd_ha,
+	coalesce(round((sum(b.area_m2) filter(where b.building_type = 'igs'))::numeric / 10000, 2), 0) footprint_igs_ha,
+	coalesce(round((sum(b.area_m2) filter(where b.building_type = 'other'))::numeric / 10000, 2), 0) footprint_other_ha,
+
+	coalesce(round((sum(b.area_m2) filter(where b.building_type = 'mkd' and b.levels between 1 and 3))::numeric / 10000, 2), 0) footprint_mkd_1_3_ha,
+	coalesce(round((sum(b.area_m2) filter(where b.building_type = 'mkd' and b.levels between 4 and 9))::numeric / 10000, 2), 0) footprint_mkd_4_9_ha,
+	coalesce(round((sum(b.area_m2) filter(where b.building_type = 'mkd' and b.levels > 9))::numeric / 10000, 2), 0) footprint_mkd_10_ha,
+
+	count(b.*)::smallint building_count,
+	coalesce(count(b.*) filter(where b.building_type = 'mkd'), 0)::smallint building_mkd_count,
+	coalesce(count(b.*) filter(where b.building_type = 'igs'), 0)::smallint building_igs_count,
+	coalesce(count(b.*) filter(where b.building_type = 'other'), 0)::smallint building_other_count,
+
+	count(b.*) filter(where b.built_year <= 1917 or o.id is not null) old_building_count,
+	
+	percentile_disc(0.5) within group(order by b.area_m2) building_median_area_m2,
+
+	percentile_disc(0.5) within group(order by b.levels) filter(where b.building_type = 'mkd') mkd_median_level,
+	percentile_disc(0.5) within group(order by b.levels) filter(where b.building_type = 'other') other_median_level,
+	percentile_disc(0.5) within group(order by b.built_year) filter(where b.building_type <> 'other') median_built_year,
+	mode() within group(order by b.built_year) filter(where b.building_type <> 'other') mode_built_year
+from raw_quater q
+join building_class2 b
+	on q.id_gis = b.id_gis
+		and st_intersects(q.geom, b.geom)
+left join okn_matched o
+	on o.id = b.id
+		and o.id_gis = b.id_gis
+group by q.id, q.id_gis, q.area_ha, q.geom;
+
+
+/* второй проход. классификация кварталов по типам среды на основе расчитанных показателей */
+drop table if exists street_classify.q_1084_v8;
+create table street_classify.q_1084_v8 as
+select
+	*,
+	case
+		when residential_function is false
+			or building_mkd_count + building_igs_count < 3 -- отбрасываем нежилые кварталы с 1-2 жилыми домами
+				and building_count > 6
+			then 'Нежилая городская среда'
+		when old_building_count >= 0.7 * building_mkd_count
+			and footprint_mkd_ha > footprint_igs_ha
+			and building_mkd_count + building_igs_count > 0.2 * building_count -- !!! допущение
+			then 'Историческая смешанная городская среда'
+		else case
+			when footprint_igs_ha > 0.7 * (footprint_mkd_ha + footprint_igs_ha)
+				and footprint_igs_ha > 2 * footprint_mkd_ha
+				and footprint_igs_ha > 0.6 * footprint_ha
+					or (
+						building_igs_count > 3 * building_other_count
+							and footprint_igs_ha > 0.9 * footprint_mkd_ha -- !!! todo: поискать условия для низкого количества зданий
+					)
+					or (
+						building_igs_count <= 5
+							and building_other_count <= 3
+							and building_mkd_count = 0
+					)
+				then 'Индивидуальная жилая городская среда'
+			when footprint_mkd_ha > 0.7 * footprint_other_ha -- общие условия для многоквартирной застройки
+				and footprint_mkd_ha >  2 * footprint_igs_ha
+				then case
+					when mkd_median_level between 1 and 3 -- медианная этажность
+						and footprint_mkd_ha > footprint_igs_ha + footprint_other_ha
+						and footprint_mkd_1_3_ha > footprint_mkd_4_9_ha
+						and footprint_mkd_1_3_ha > 2 * footprint_mkd_10_ha
+						then case 
+							when median_built_year between 1918 and 1959
+								or median_built_year is null -- !!!большое допущение в условиях отсутствия датировок
+								then 'Советская малоэтажная разреженная городская среда'
+							when median_built_year between 1960 and 1990
+								then 'Позднесоветская малоэтажная разреженная городская среда'
+							when median_built_year > 1990
+								then 'Современная малоэтажная разреженная городская среда'
+						end
+					when mkd_median_level > 3
+						then case
+							when median_built_year between 1918 and case when id_gis in (777, 778) then 1959 else 1960 end -- верхняя граница 1959 для Москвы и Санкт-Петербурга и 1960 для всех остальных городов
+								then 'Cоветская периметральная городская среда'
+							else case
+								when mkd_median_level between 4 and 9
+									then 'Среднеэтажная микрорайонная городская среда'
+								when mkd_median_level > 9
+									then 'Многоэтажная микрорайонная городская среда'
+							end
+						end
+				end
+		end
+	end::varchar quater_class
+
+from quater_stat2
+where building_count > 1 -- отбрасываем кварталы с одним зданием...
+;
+
+
+
+
