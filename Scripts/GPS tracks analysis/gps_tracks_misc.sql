@@ -71,17 +71,42 @@ from (
 group by track_id;
 
 
--- Сажаем трекм на граф (присваиваем id ближайшей дороги)
+-- Сажаем треки на граф (присваиваем id ближайшей дороги)
 drop table if exists tmp.quazar_veb_on_track;
 create table tmp.quazar_veb_on_track as
 select
 	q.*,
-	r.id road_id
+	r.street_id
 from tmp.quazar_veb q
 left join lateral (
-	select id, geom
+	select street_id, geom
 	from index2019.data_road r
 	where st_dwithin(q.geom::geography, r.geom::geography, 10)
 	order by q.geom::geography <-> r.geom::geography
 	limit 1
 ) r on true
+where q.id_gis = 1051 -- дебаг
+;
+
+-- Сборка статистики на графе
+drop table if exists tmp.quazar_graph;
+create table tmp.quazar_graph as
+select
+	r.street_id,
+	r.id_gis,
+	r.name,
+	r.type,
+	r.geom,
+	avg(q.speed) filter(where extract(hour from q.date_time) not in (7,8,9,10,18,19,20)) speed_normal,
+	avg(q.speed) filter(where extract(hour from q.date_time) in (7,8,9,10,18,19,20)) speed_rush_hour,
+	avg(q.speed) filter(where extract(hour from q.date_time) not in (7,8,9,10,18,19,20)) - avg(q.speed) filter(where extract(hour from q.date_time) in (7,8,9,10,18,19,20)) speed_dif
+from index2019.data_road r
+left join tmp.quazar_veb_on_track q using(street_id)
+where r.id_gis = 1051 -- дебаг
+group by r.street_id, r.id_gis,	r.name,	r.type, r.geom
+;
+
+select date_time, extract(hour from date_time) hour_ from tmp.quazar_veb_on_track
+	
+	
+	
