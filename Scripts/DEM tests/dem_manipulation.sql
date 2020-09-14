@@ -31,3 +31,5 @@ join (
 group by b.id_gis, b.city, b.geom;
 
 alter table tmp.a1_hillshade add primary key(rid);
+
+

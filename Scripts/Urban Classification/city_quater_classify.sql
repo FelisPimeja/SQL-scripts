@@ -367,6 +367,8 @@ select distinct on (b.id)
 			then 'igs'::varchar
 		when b.osm_type = 'detached' and b.building_type = 'other'
 			then 'igs'::varchar
+		-- Пока выключка
+		/*
 		when b.osm_type = 'garages' or b.osm_type = 'garage'
 			or (
 				b.area_m2 >= 500
@@ -393,6 +395,7 @@ select distinct on (b.id)
 			then 'shop'::varchar
 		when b.osm_type = 'retail' or b.osm_type = 'commercial'
 			then 'commercial'::varchar
+		*/
 		else b.building_type
 	end building_type,
 	case 
@@ -433,15 +436,18 @@ select * from building_class2;
 create index on street_classify.building_classify_2(id_gis);
 create index on street_classify.building_classify_2(building_type);
 
+
+-- попытка кластеризации
 drop table if exists street_classify.cluster_1084;
 create table street_classify.cluster_1084 as
 select
 	b.*,
-	st_clusterdbscan(b.geom, 0.0005, 4) over(partition by b.quater_id, b.building_type) cid
+	st_clusterdbscan(b.geom, 0.0005, 4) over(partition by b.building_type) cid
 from building_class2 b
-join classify_v7 q
-	on b.quater_id = q.id
-		and (q.quater_class = 'Нежилая городская среда' or q.quater_class is null)
+--join classify_v7 q
+--	on b.quater_id = q.id
+--		and (q.quater_class = 'Нежилая городская среда' or q.quater_class is null)
+where b.quater_id = 438
 ;
 
 
