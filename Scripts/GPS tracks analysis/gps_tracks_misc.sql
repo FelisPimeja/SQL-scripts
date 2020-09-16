@@ -128,7 +128,22 @@ where r.id_gis in (select id_gis from veb_rf.city)
 group by r.street_id, r.id_gis,	r.name,	r.type, r.geom
 ;
 
-select date_time, extract(hour from date_time) hour_ from tmp.quazar_on_track
+select date_time, extract(hour from date_time) hour_ from tmp.quazar_on_track;
 	
-create index on osm.extent using gist(geom)
-	
+create index on osm.extent using gist(geom);
+
+
+drop table if exists tmp.quazar_stat1;
+create table tmp.quazar_stat1 as
+select
+	b.id_gis,
+	b.city,
+	b.region_name,
+	percentile_disc(0.5) within group(order by q.speed) filter(where extract(hour from q.date_time) not in (7,8,9,10,18,19,20)) speed_normal,
+	percentile_disc(0.5) within group(order by q.speed) filter(where extract(hour from q.date_time) in (7,8,9,10,18,19,20)) speed_rush_hour,
+	percentile_disc(0.5) within group(order by q.speed) filter(where extract(hour from q.date_time) not in (7,8,9,10,18,19,20)) - percentile_disc(0.5) within group(order by q.speed) filter(where extract(hour from q.date_time) in (7,8,9,10,18,19,20)) speed_dif
+from russia.city_boundary b
+join tmp.quazar_on_track q using(id_gis)
+group by b.id_gis, b.city, b.region_name
+order by speed_dif desc;
+
