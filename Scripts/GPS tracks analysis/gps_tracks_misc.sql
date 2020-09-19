@@ -26,6 +26,8 @@ join tmp.quazar_dataset q
 
 
 -- Фикс для кривых данных со стороны Квазара:
+drop table if exists tmp.quazar_clipped;
+create table tmp.quazar_clipped as
 select q.ogc_fid id,
 	q.track_id::int,
 	to_timestamp(q.timestamp::int) date_time,
@@ -38,7 +40,8 @@ from russia.city_boundary b
 join tmp.quazar_dataset q
 	on st_intersects(q.wkb_geometry, b.geom)
 		and substring(z, 3, length(z))::int between 10 and 155
-where b.id_gis = 1051;
+--where b.id_gis = 1051
+;
 
 
 
@@ -108,6 +111,8 @@ left join lateral (
 --where q.id_gis = 1051 -- дебаг
 ;
 create index on tmp.quazar_on_track(street_id);
+create index on tmp.quazar_on_track(id_gis);
+
 
 -- Сборка статистики на графе
 drop table if exists tmp.quazar_graph;
@@ -133,6 +138,7 @@ select date_time, extract(hour from date_time) hour_ from tmp.quazar_on_track;
 create index on osm.extent using gist(geom);
 
 
+-- Простая статистика на разнице медианных скоростей в час пик и обычное время (для всех дорог в пределах города)
 drop table if exists tmp.quazar_stat1;
 create table tmp.quazar_stat1 as
 select
@@ -147,3 +153,59 @@ join tmp.quazar_on_track q using(id_gis)
 group by b.id_gis, b.city, b.region_name
 order by speed_dif desc;
 
+
+-- Более продвинутая статистика на разнице медианных скоростей в час пик и обычное время (для всех дорог в пределах города) с введением весов от важности дорог
+drop table if exists quazar_on_track;
+create temp table quazar_on_track as
+--explain
+select g.*, r.type, extract(hour from g.date_time)::smallint "hour"
+from tmp.quazar_on_track g
+join index2019.data_road r
+	on g.street_id = r.street_id
+		and g.id_gis = r.id_gis
+		and r."type" in ('trunk','trunk_link','primary','primary_link','secondary','secondary_link','tertiary','tertiary_link','unclassified','road','residential')
+ where g.id_gis in (select id_gis from veb_rf.city limit 100) --дебаг
+;
+		
+create index on quazar_on_track(track_id);
+create index on quazar_on_track(id_gis);
+create index on quazar_on_track(speed);
+create index on quazar_on_track(type);
+create index on quazar_on_track(hour);
+
+
+drop table if exists tmp.quazar_stat2;
+create table tmp.quazar_stat2 as
+select
+	b.id_gis,
+	b.city,
+	b.region_name,
+	
+	count(distinct q.track_id) total_tracks, -- сколько треков пришлось на город за 4 дня
+	
+	/* Медианная скорость в обычное время для дорог трёх разных категорий  */
+	percentile_disc(0.5) within group(order by q.speed) filter(where q.type in ('trunk','trunk_link','primary','primary_link') and q.hour not in (7,8,9,10,18,19,20)) speed_normal_1,
+	percentile_disc(0.5) within group(order by q.speed) filter(where q.type in ('secondary','secondary_link','tertiary','tertiary_link') and q.hour not in (7,8,9,10,18,19,20)) speed_normal_2,
+	percentile_disc(0.5) within group(order by q.speed) filter(where q.type in ('unclassified','road','residential') and q.hour not in (7,8,9,10,18,19,20)) speed_normal_3,
+	
+	/* Медианная скорость в "час пик" для дорог трёх разных категорий  */
+	percentile_disc(0.5) within group(order by q.speed) filter(where q.type in ('trunk','trunk_link','primary','primary_link') and q.hour in (7,8,9,10,18,19,20)) speed_rush_hour_1,
+	percentile_disc(0.5) within group(order by q.speed) filter(where q.type in ('secondary','secondary_link','tertiary','tertiary_link') and q.hour in (7,8,9,10,18,19,20)) speed_rush_hour_2,
+	percentile_disc(0.5) within group(order by q.speed) filter(where q.type in ('unclassified','road','residential') and q.hour in (7,8,9,10,18,19,20)) speed_rush_hour_3,
+	
+	/* Разница с скорости в "час пик" и обычное время для дорог трёх разных категорий  */
+	percentile_disc(0.5) within group(order by q.speed) filter(where q.type in ('trunk','trunk_link','primary','primary_link') and q.hour not in (7,8,9,10,18,19,20)) - percentile_disc(0.5) within group(order by q.speed) filter(where q.type in ('trunk','trunk_link','primary','primary_link') and extract(hour from q.date_time) in (7,8,9,10,18,19,20)) speed_dif_1,
+	percentile_disc(0.5) within group(order by q.speed) filter(where q.type in ('secondary','secondary_link','tertiary','tertiary_link') and q.hour not in (7,8,9,10,18,19,20)) - percentile_disc(0.5) within group(order by q.speed) filter(where q.type in ('secondary','secondary_link','tertiary','tertiary_link') and extract(hour from q.date_time) in (7,8,9,10,18,19,20)) speed_dif_2,
+	percentile_disc(0.5) within group(order by q.speed) filter(where q.type in ('unclassified','road','residential') and q.hour not in (7,8,9,10,18,19,20)) - percentile_disc(0.5) within group(order by q.speed) filter(where q.type in ('unclassified','road','residential') and extract(hour from q.date_time) in (7,8,9,10,18,19,20)) speed_dif_3,
+	
+	/* Разница в скорости с условно "максимально разрешённой" */
+	80 - percentile_disc(0.5) within group(order by q.speed) filter(where q.type in ('trunk','trunk_link','primary','primary_link') and q.hour not in (7,8,9,10,18,19,20)) speed_limit_dif_1,
+	80 - percentile_disc(0.5) within group(order by q.speed) filter(where q.type in ('secondary','secondary_link','tertiary','tertiary_link') and q.hour not in (7,8,9,10,18,19,20)) speed_limit_dif_2,
+	60 - percentile_disc(0.5) within group(order by q.speed) filter(where q.type in ('unclassified','road','residential') and q.hour not in (7,8,9,10,18,19,20)) speed_limit_dif_3
+
+	from russia.city_boundary b
+join quazar_on_track q using(id_gis)
+group by b.id_gis, b.city, b.region_name
+order by speed_dif_1 desc;
+
+select distinct r.type from tmp.quazar_on_track q join index2019.data_road r using(street_id)
