@@ -29,3 +29,6 @@ update traffic.google_initial i
 		) r on true
 	) r
 ;
+
+create index on traffic.google_initial(road_segment_id);
+create index on traffic.google_initial(dist_to_road_m);
