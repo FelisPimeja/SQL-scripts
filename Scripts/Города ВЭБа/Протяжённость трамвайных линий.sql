@@ -42,7 +42,15 @@ left join tram_depot td using(id_gis)
 order by tram_lines_length_km desc;
 
 
-
+-- Запросик для Excel
+select
+	b.id_gis,
+	b.city "Город",
+	b.region_name "Субъект РФ",
+	tl.tram_lines_length_km "Протяжённость трамвайной сети",
+	td.depot_count "Количество трамвайных депо"
+from veb_rf.tram_stat;
+	
 
 
 
