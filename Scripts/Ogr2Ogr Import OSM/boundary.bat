@@ -6,7 +6,7 @@ set startTimeAdmin=%time%
  -f PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
  "D:\apetrov\Projects\Postgres\OSM\PBF\russia-latest.osm.pbf" ^
  -sql "select boundary, admin_level, name, replace(wikipedia, ':', '.wikipedia.org/wiki/') wikipedia_link, wikidata wikidata_id, other_tags, geometry from multipolygons where type = 'boundary'" ^
- --config OSM_CONFIG_FILE "D:\apetrov\Projects\Postgres\OSM\Osmconf\osmconf.ini" ^
+ --config OSM_CONFIG_FILE "C:\Users\apetrov\git\SQL-scripts\Scripts\Ogr2Ogr Import OSM\osmconf.ini ^
  --config PG_USE_COPY YES ^
  --config MAX_TMPFILE_SIZE 2048 ^
  -nln russia.osm_boundary_all ^
@@ -154,7 +154,6 @@ comment on column russia.osm_boundary_time_zone.wikidata_id is 'Ссылка н�
 comment on column russia.osm_boundary_time_zone.other_tags is 'Прочие теги'; ^
 comment on column russia.osm_boundary_time_zone.geom is 'Геометрия';"
 
-
 :: Муниципальные образования первого уровня (Районы, городские и муниципальные округа и ЗАТО):
 ogr2ogr ^
  PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
@@ -177,8 +176,6 @@ comment on column russia.osm_admin_boundary_municipal_level1.wikipedia_link is '
 comment on column russia.osm_admin_boundary_municipal_level1.wikidata_id is 'Ссылка на id элемента в Wikidata'; ^
 comment on column russia.osm_admin_boundary_municipal_level1.other_tags is 'Прочие теги'; ^
 comment on column russia.osm_admin_boundary_municipal_level1.geom is 'Геометрия';"
-
-
 
 :: Муниципальные образования второго уровня (Городские и сельские поселения, внутригородские районы):
 ogr2ogr ^
