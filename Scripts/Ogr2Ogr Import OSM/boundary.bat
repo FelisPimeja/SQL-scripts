@@ -1,6 +1,6 @@
 set startTimeAdmin=%time%
 :: Загрузка административных границ всех уровней
-:: Время выполнения ~ 15 мин.
+:: Время выполнения ~ 13 мин.
 :: Загрузка всех границ для последующего разбора
  ogr2ogr ^
  -f PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
