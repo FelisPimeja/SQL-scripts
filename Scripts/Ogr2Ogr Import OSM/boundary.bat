@@ -39,6 +39,7 @@ ogr2ogr ^
  -sql ^
 "drop table if exists russia.osm_admin_boundary_federal_district; ^
 create table russia.osm_admin_boundary_federal_district as select (row_number() over())::int id, name, wikidata_id, wikipedia_link, other_tags, geom from russia.osm_admin_boundary_all where admin_level = 3; ^
+alter table russia.osm_admin_boundary_federal_district add primary key(id); ^
 /* Индексы */ ^
 create index on russia.osm_admin_boundary_federal_district(name); ^
 create index on russia.osm_admin_boundary_federal_district(wikidata_id); ^
@@ -54,6 +55,29 @@ comment on column russia.osm_admin_boundary_federal_district.wikipedia_link is '
 comment on column russia.osm_admin_boundary_federal_district.wikidata_id is 'Ссылка на id элемента в Wikidata'; ^
 comment on column russia.osm_admin_boundary_federal_district.other_tags is 'Прочие теги'; ^
 comment on column russia.osm_admin_boundary_federal_district.geom is 'Геометрия';" ^
+
+:: Субъекты РФ:
+ogr2ogr ^
+ PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ -sql ^
+"drop table if exists russia.osm_admin_boundary_region; ^
+create table russia.osm_admin_boundary_region as select (row_number() over())::int id, name, wikidata_id, wikipedia_link, other_tags, geom from russia.osm_admin_boundary_all where admin_level = 4; ^
+alter table russia.osm_admin_boundary_region add primary key(id); ^
+/* Индексы */ ^
+create index on russia.osm_admin_boundary_region(name); ^
+create index on russia.osm_admin_boundary_region(wikidata_id); ^
+create index on russia.osm_admin_boundary_region(wikipedia_link); ^
+create index on russia.osm_admin_boundary_region using gin(other_tags); ^
+create index on russia.osm_admin_boundary_region using gist(geom); ^
+create index osm_admin_boundary_region_geog_idx on russia.osm_admin_boundary_region using gist((geom::geography)); ^
+/* Комментарии */ ^
+comment on table russia.osm_admin_boundary_region is 'Административные границы Субъектов России  (OpenStreetMap). Актуальность - 15.08.2020'; ^
+comment on column russia.osm_admin_boundary_region.id is 'Первичный ключ'; ^
+comment on column russia.osm_admin_boundary_region.name is 'Название Субъекта РФ'; ^
+comment on column russia.osm_admin_boundary_region.wikipedia_link is 'Ссылка на статью в Википедии'; ^
+comment on column russia.osm_admin_boundary_region.wikidata_id is 'Ссылка на id элемента в Wikidata'; ^
+comment on column russia.osm_admin_boundary_region.other_tags is 'Прочие теги'; ^
+comment on column russia.osm_admin_boundary_region.geom is 'Геометрия';"
 
 :: Экономические районы:
 ogr2ogr ^
@@ -77,27 +101,6 @@ comment on column russia.osm_admin_boundary_all_economic_region.other_tags is '�
 comment on column russia.osm_admin_boundary_all_economic_region.geom is 'Геометрия';"
 
 :: Военные округа:
-ogr2ogr ^
- PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
- -sql ^
-"create table russia.osm_admin_boundary_all_federal_district as select name, wikidata_id, wikipedia_link, other_tags, geom from russia.osm_admin_boundary_all where admin_level = 3 ^
-/* Индексы */ ^
-create index on russia.osm_admin_boundary_all_federal_district(name); ^
-create index on russia.osm_admin_boundary_all_federal_district(wikidata_id); ^
-create index on russia.osm_admin_boundary_all_federal_district(wikipedia_link); ^
-create index on russia.osm_admin_boundary_all_federal_district using gin(other_tags); ^
-create index on russia.osm_admin_boundary_all_federal_district using gist(geom); ^
-create index admin_boundary_geog_idx on russia.osm_admin_boundary_all using gist((geom::geography)); ^
-/* Комментарии */ ^
-comment on table russia.osm_admin_boundary_all_federal_district is 'Административные границы Федеральных округов России  (OpenStreetMap). Актуальность - 15.08.2020'; ^
-comment on column russia.osm_admin_boundary_all_federal_district.id is 'Первичный ключ'; ^
-comment on column russia.osm_admin_boundary_all_federal_district.name is 'Название Федерального округа'; ^
-comment on column russia.osm_admin_boundary_all_federal_district.wikipedia_link is 'Ссылка на статью в Википедии'; ^
-comment on column russia.osm_admin_boundary_all_federal_district.wikidata_id is 'Ссылка на id элемента в Wikidata'; ^
-comment on column russia.osm_admin_boundary_all_federal_district.other_tags is 'Прочие теги'; ^
-comment on column russia.osm_admin_boundary_all_federal_district.geom is 'Геометрия';"
-
-:: Субъекты РФ:
 ogr2ogr ^
  PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
  -sql ^
