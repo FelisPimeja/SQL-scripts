@@ -255,6 +255,43 @@ left join d_3 using(id_gis)
 order by c.id_gis;
 
 
+-- Статистика по проценту аварийного жилья и жилищной обеспеченности в городах РФ
+
+drop table if exists tmp.tmp_city_stat;
+create table tmp.tmp_city_stat as 
+--explain
+with resid_area as (
+	select
+		id_gis,
+		round(((sum(area_m2 * case when levels is not null then levels else 1::int2 end) filter(where building_type in ('igs', 'mkd'))) / 1000)::numeric) resid_area
+	from russia.building_classify
+--	where id_gis = 778
+	group by id_gis
+),
+
+hazard_area as (
+	select
+		id_gis,
+		round((sum(area_total) / 1000)::numeric) hazard_area
+	from russia.dwelling_hazardous
+--	where id_gis = 778
+	group by id_gis	
+)
+
+select
+	c.id_gis,
+	c.city "Город",
+	c.region_name "Субъект РФ",
+	b.resid_area "Всего жилья, тыс.м2",
+	coalesce(h.hazard_area, 0) "Всего авар. жилья, тыс.м2",
+	coalesce(round((h.hazard_area * 100 / nullif(b.resid_area, 0))::numeric, 2), 0) "% авар. жилья",
+	r.pop2020 "Население на 2020 г., чел.",
+	coalesce(round((b.resid_area * 1000 / nullif(r.pop2020, 0))::numeric, 2), 0) "Обеспеч. жильём, м2/чел."
+from russia.city c
+left join resid_area b using(id_gis)
+left join hazard_area h using(id_gis)
+left join russia.city_population_rosstat r using(id_gis);
+
 
 
 
