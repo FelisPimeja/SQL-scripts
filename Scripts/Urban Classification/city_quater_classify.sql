@@ -560,4 +560,27 @@ where building_count > 1 -- отбрасываем кварталы с одни�
 
 
 
+--Перепилить и добавить
+--create index on russia.city_quater_type(id);
+--create index on russia.city_quater_type(id_gis);
+--create index on russia.city_quater_type(area_ha);
+--create index on russia.city_quater_type(residential_function);
+--create index on russia.city_quater_type(footprint_ha);
+--create index on russia.city_quater_type(footprint_mkd_ha);
+--create index on russia.city_quater_type(footprint_igs_ha);
+--create index on russia.city_quater_type(footprint_other_ha);
+--create index on russia.city_quater_type(footprint_mkd_1_3_ha);
+--create index on russia.city_quater_type(footprint_mkd_4_9_ha);
+--create index on russia.city_quater_type(footprint_mkd_10_ha);
+--create index on russia.city_quater_type(building_count);
+--create index on russia.city_quater_type(building_mkd_count);
+--create index on russia.city_quater_type(building_igs_count);
+--create index on russia.city_quater_type(building_other_count);
+--create index on russia.city_quater_type(old_building_count);
+--create index on russia.city_quater_type(mkd_median_level);
+--create index on russia.city_quater_type(other_median_level);
+--create index on russia.city_quater_type(median_built_year);
+--create index on russia.city_quater_type(mode_built_year);
+--create index on russia.city_quater_type(quater_class);
+--create index on russia.city_quater_type using gist(geom);
 
