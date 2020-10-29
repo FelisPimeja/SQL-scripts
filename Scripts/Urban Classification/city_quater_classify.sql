@@ -477,7 +477,7 @@ select
 	coalesce(count(b.*) filter(where b.building_type = 'igs'), 0)::smallint building_igs_count,
 	coalesce(count(b.*) filter(where b.building_type = 'other'), 0)::smallint building_other_count,
 
-	count(b.*) filter(where b.built_year <= 1917 or o.id is not null) old_building_count,
+	(count(b.*) filter(where b.built_year <= 1917 or o.id is not null))::int2 old_building_count,
 	
 	percentile_disc(0.5) within group(order by b.area_m2) building_median_area_m2,
 
