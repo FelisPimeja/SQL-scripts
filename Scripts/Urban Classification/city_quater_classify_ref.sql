@@ -1,27 +1,52 @@
--- Целевые параметры среды
+/* Целевые параметры среды */
+/* Время расчёта: ~ 2.5 мин для Челябинска */
+
+-- Буферы 800 м. от кварталов (~ 15 сек.)
 drop table if exists quater_buffer;
 create temp table quater_buffer as
-select id, id_gis, st_buffer(geom::geography, 800)::geometry(polygon, 4326) geom
-from street_classify.q_1080_v8 q
-where q.id_gis = 1080;
+select
+	id,
+	id_gis,
+	geom src_geom, -- исходную геометрию оставляем
+	st_multi(st_buffer(geom::geography, 800)::geometry)::geometry(multipolygon, 4326) geom -- буфер 800м (~ пешая досягаемость. Правильнее строить изохроны, но пока считаем так!!!)
+--from street_classify.q_1080_v8 q --bak
+from russia.city_quater_type q
+--where q.id_gis = 1080; --дебаг
+where q.id_gis in(
+	44,256,288,290,797,812,871,926,927,932,943,952,955,
+	960,991,992,1010,1031,1034,1040,1047,1050,1061,
+	1065,1071,1075,1080,1082,1096,1099,1101,1104
+); --целевые id_gis для 32 городов для проекта Стандарта Мастер плана
 
+create index on quater_buffer(id);
 create index on quater_buffer(id_gis);
+create index on quater_buffer((st_area(src_geom::geography)));
 create index on quater_buffer using gist(geom);
+create index on quater_buffer using gist(src_geom);
 
 
+-- Подсчёт кол-ва аварийных домов в квартале (имеет смысл перенести в классификацию типов сред)
 drop table if exists hazardous_dwelling;
 create temp table hazardous_dwelling as 
-select q.id, q.id_gis, count(h.*) total_hazardous_dwelling
-from street_classify.q_1080_v8 q
+select
+	q.id,
+	q.id_gis,
+	count(h.*) total_hazardous_dwelling
+from quater_buffer q
 left join russia.dwelling_hazardous h
 	on q.id_gis = h.id_gis
 		and h.match_level = 'house'
-		and st_intersects(q.geom, h.geom)
+		and st_intersects(q.src_geom, h.geom)
 group by q.id, q.id_gis;
 
+create index on hazardous_dwelling(id);
+create index on hazardous_dwelling(id_gis);
+create index on hazardous_dwelling(total_hazardous_dwelling);
 
+
+-- Проверка на негативные антропогенные факторы в шаговой доступности
 drop table if exists negative_factors;
-create temp table negative_factors as
+create temp table negative_factors as 
 select
 	q.id,
 	q.id_gis,
@@ -43,7 +68,30 @@ left join index2019.data_poi p
 		)
 group by q.id, q.id_gis;
 
+create index on negative_factors(id);
+create index on negative_factors(id_gis);
+create index on negative_factors(negative_factors);
 
+
+-- Подсчёт плотности населения
+drop table if exists pop_density;
+create temp table pop_density as
+select
+	q.id,
+	q.id_gis,
+	coalesce(round((sum(p.population) * 10000 / st_area(q.src_geom::geography))::numeric), 0) pop_density
+from quater_buffer q
+left join index2019.data_pop_altermag p
+	on q.id_gis = p.id_gis
+		and st_intersects(q.src_geom, p.geom)
+group by q.id, q.id_gis, q.src_geom;
+
+create index on pop_density(id);
+create index on pop_density(id_gis);
+create index on pop_density(pop_density);
+
+
+-- Проверка на благоустроенного озеленения в шаговой доступности
 drop table if exists greenery;
 create temp table greenery as
 select
@@ -56,7 +104,12 @@ left join index2019.data_greenery g
 		and st_intersects(q.geom, g.geom)
 group by q.id, q.id_gis;
 
+create index on greenery(id);
+create index on greenery(id_gis);
+create index on greenery(greenery_access);
 
+
+-- Проверка наличия остановок общественного транспорта в шаговой доступности (можно было бы проверять отдельно для каждого дома, а потом взвешивать) (~ 22 сек.)
 drop table if exists public_transport;
 create temp table public_transport as 
 select
@@ -68,9 +121,15 @@ left join index2019.data_poi p
 	on q.id_gis = p.id_gis
 		and p.rubrics = 'Остановка общественного транспорта'
 		and st_intersects(q.geom, p.geom)
-group by q.id, q.id_gis order by id;
+group by q.id, q.id_gis;
 
-/* дебажить!!! */
+create index on public_transport(id);
+create index on public_transport(id_gis);
+create index on public_transport(public_transport_access);
+
+
+/* Пока не участвует в расчёте - дебажить!!! */
+/* -- Транспортная активность
 drop table if exists transport_activity;
 create temp table transport_activity as 
 --explain analyze
@@ -90,7 +149,21 @@ group by sa.id, sa.id_gis;
 --create index on tmp.chelyabinsk_service_area_subdiv using gist(geom);
 
 create index on tmp.chelyabinsk_service_area(id_gis);
+*/
 
+
+
+--!!! Перезалить таблицу на всю Россию потом !!!
+--create table street_classify.ipa as select (row_number() over())::int id, ipa::numeric, id_gis::int2, geom from tmp.ipa_st_geom;
+--alter table street_classify.ipa add primary key(id);
+--create index on street_classify.ipa(id_gis); 
+--create index on street_classify.ipa(ipa); 
+--create index on street_classify.ipa using gist(geom); 
+--create index on street_classify.ipa ((st_length(geom::geography))); 
+--!!!
+
+
+-- Пешеходная активность (~ 2 мин)
 drop table if exists pedestrian_activity;
 create temp table pedestrian_activity as 
 select
@@ -98,12 +171,17 @@ select
 	q.id_gis,
 	coalesce(round((sum(i.ipa * st_length(i.geom::geography, true)) / nullif(sum(st_length(i.geom::geography, true)), 0))::numeric, 2), 0) ipa_avg -- усреднённый индекс пешеходной активности
 from quater_buffer q
-left join tmp.chelyabinsk_ipa i
+left join street_classify.ipa i
 	on q.id_gis = i.id_gis
 		and st_intersects(q.geom, i.geom)
 group by q.id, q.id_gis;
 
+create index on pedestrian_activity(id);
+create index on pedestrian_activity(id_gis);
+create index on pedestrian_activity(ipa_avg);
 
+
+-- Проверка шаговой доступности POI (~ 2 мин.) 
 drop table if exists poi;
 create temp table poi as 
 select
@@ -176,26 +254,37 @@ left join index2019.data_poi p
 		and st_intersects(q.geom, p.geom)
 group by q.id, q.id_gis;
 
+create index on poi(id);
+create index on poi(id_gis);
+create index on poi(school_kindergarden);
+create index on poi(clinic);
+create index on poi(entertainment);
+create index on poi(mall);
 
+
+-- Расчёт суммарного футпринта и площади застройки + средняя этажность жилых зданий (~ 50 сек.) - Надо бы перенести в расчёт статистики по кварталам!!!
 drop table if exists far_gba;
 create temp table far_gba as 
 select 
 	q.id,
 	q.id_gis,
 	sum(area_m2) far_m2,
-	sum(area_m2 * levels) gba_m2
-from street_classify.q_1080_v8 q
+	sum(area_m2 * levels) gba_m2,
+	percentile_disc(0.5) within group(order by b.levels) filter(where b.building_type != 'other') residential_median_level
+from quater_buffer q
 left join russia.building_classify b
 	on q.id_gis = b.id_gis
-		and st_intersects(q.geom, b.geom)
+		and st_intersects(q.src_geom, b.geom)
 group by q.id, q.id_gis;
 
 create index on far_gba(id);
 create index on far_gba(id_gis);
 create index on far_gba(far_m2);
 create index on far_gba(gba_m2);
+create index on far_gba(residential_median_level);
 
 
+-- Вычленяем точки ОДЗ для последующего расчёта суммарной площади (~ 2.5 мин)
 drop table if exists odz_points;
 create temp table odz_points as 
 select distinct on(p.company_id)
@@ -203,18 +292,18 @@ select distinct on(p.company_id)
 	q.id_gis,
 	p.rubrics,
 	p.geom
-from street_classify.q_1080_v8 q
+from quater_buffer q
 left join index2019.data_poi p
 	on q.id_gis = p.id_gis
 		and p.odz is true
-		and st_intersects(q.geom, p.geom);
+		and st_intersects(q.src_geom, p.geom);
 
 create index on odz_points(id_gis);
 create index on odz_points(id);
 create index on odz_points(rubrics);
 create index on odz_points using gist(geom);
 
-
+-- Считаем суммарную площадь по референсной таблице площадей и точек из предыдущего шага
 drop table if exists odz_area;
 create temp table odz_area as 
 select 
@@ -229,23 +318,23 @@ create index on odz_area(id);
 create index on odz_area(id_gis);
 create index on odz_area(odz_area_m2);
 
-
+-- Свод статистики из предыдущих шагов
 drop table if exists stat;
 create temp table stat as 
 	select
-/* Числовые характеристики */
+	/* Числовые характеристики */
 	q.id, -- уникальный id квартала
 	q.id_gis,
 	q.quater_class,
 	q.area_ha, -- Площадь квартала (га)
-	round(q.pop_density::numeric)::int pop_density, -- Плотнность населения (чел./ га)
-	round(q.built_density::numeric, 2) built_density, -- Плотность застройки квартала (тыс. м2/га)
-	q.residential_median_level, -- Этажность застройки ( надземных этажа)
+	pd.pop_density, -- Плотнность населения (чел./ га)
+	coalesce(round((f.gba_m2 / (area_ha * 1000))::numeric) , 0)  built_density, -- Плотность застройки квартала (тыс. м2/га)
+	f.residential_median_level, -- Этажность застройки ( надземных этажа)
 	-- Ширина улиц районного значения (м)
 	-- Ширина второстепенных улиц (м)
 	-- Ширина местных улиц (м)
 
-/* Уровень связанности территории */						
+	/* Уровень связанности территории */						
 	pt.public_transport_access, -- Доступность на общественном транспорте/уровень обеспеченности территории/объекта общественным транспортом - пешеходная доступность остановок ОТ, 2 и более видов транспорта в пешеходной доступности.  
 	case 
 		when ita.ita_avg >= 1 then 'Высокая (3)'::varchar
@@ -258,7 +347,7 @@ create temp table stat as
 		else 'Низкая (1)'::varchar
 	end ipa, -- Уровень пешеходной связанности территории/объекта с прилегающими территориями - Средний уровень интенсивности использования пешеходных путей в радиусе пешеходной досупности
 
-/* Обеспеченность сервисами */					
+	/* Обеспеченность сервисами */					
 	case
 		when p.school_kindergarden is true and p.clinic is true 
 			then 'Высокая (3)'::varchar
@@ -288,21 +377,20 @@ create temp table stat as
 	g.greenery_access, -- Обеспеченность озелененными объектами в пешеходной доступности.
 	-- Доля помещений объектов общественно-деловой инфраструктуры от общей площади площади застройки территории. Считается как количество объектов общественных функций, каждый из которых, в зависимости от типа, умножен на среднюю площадь таких объектов (список, где типы объектов соотнесены с площадью будет позднее) деленный на общую площадь застройки. 
 
-/* Качественные характеристики территории */						
+	/* Качественные характеристики территории */						
 	n.negative_factors,-- Близость негативных антропогенных факторов. (в пешеходной доступности)
 	case 
 		when h.total_hazardous_dwelling > 0 then true::bool
 		else false::bool
 	end hazardous_dwelling, -- Наличие аварийного жилья
 
-/* Пока на рассмотрении */
+	/* Пока на рассмотрении */
     coalesce(f.far_m2, 0) far,-- Плотность застройки по футпринту здания (FAR)
-    coalesce(f.gba_m2, 0) gba,
     coalesce(o.odz_area_m2, 0),
     round(coalesce(o.odz_area_m2 * 100 / nullif(f.gba_m2, 0), 0)::numeric, 2) odz_area_percent,
 
     geom
-from street_classify.q_1080_v8 q
+from russia.city_quater_type q
 left join hazardous_dwelling h using(id)
 left join negative_factors n using(id)
 left join greenery g using(id)
@@ -311,9 +399,16 @@ left join transport_activity ita using(id)
 left join pedestrian_activity ipa using(id)
 left join poi p using(id)
 left join far_gba f using(id)
-left join odz_area o using(id);
+left join odz_area o using(id)
+left join pop_density pd using(id)
+where q.id_gis in(
+	44,256,288,290,797,812,871,926,927,932,943,952,955,
+	960,991,992,1010,1031,1034,1040,1047,1050,1061,
+	1065,1071,1075,1080,1082,1096,1099,1101,1104
+);
 	
 
+-- Второй свод статистики (прописываем целевые показатели и считаем дельту)
 drop table if exists stat2;
 create temp table stat2 as
 select
@@ -571,9 +666,9 @@ from stat
 order by id_gis, id;
 
 
-
-drop table if exists street_classify.quater_stat_1080_v8_verify2;
-create table street_classify.quater_stat_1080_v8_verify2 as
+-- Итоговая статистика (не слить ли с предыдущим шагом?)
+drop table if exists street_classify.quater_stat_verify;
+create table street_classify.quater_stat_verify as
 select
 	id,
 	id_gis,
@@ -712,44 +807,44 @@ select
 from stat2
 ;
 
-alter table street_classify.quater_stat_1080_v8_verify2 add primary key(id);
-create index on street_classify.quater_stat_1080_v8_verify2(id_gis);
-create index on street_classify.quater_stat_1080_v8_verify2 using gist(geom);
+alter table street_classify.quater_stat_verify add primary key(id);
+create index on street_classify.quater_stat_verify(id_gis);
+create index on street_classify.quater_stat_verify using gist(geom);
 
-comment on table street_classify.quater_stat_1080_v8_verify2 is 'Целевые параметры сред для id_gis = 1080. Сравнение поквартальных показателей с эталонными
+comment on table street_classify.quater_stat_verify is 'Целевые параметры сред для id_gis = 1080. Сравнение поквартальных показателей с эталонными
 Методика: https://docs.google.com/spreadsheets/d/14Xn4kg7C4M7fj0S57rGpMqY5Ou690lFY-lU3O4A2F1w/edit#gid=871860173';
-comment on column street_classify.quater_stat_1080_v8_verify2.id is 'Первичный ключ - уникальный id квартала';
-comment on column street_classify.quater_stat_1080_v8_verify2.id_gis is 'id_gis города';
-comment on column street_classify.quater_stat_1080_v8_verify2.quater_class is 'Тип городской в квартале';
-comment on column street_classify.quater_stat_1080_v8_verify2.area_ha is 'Площадь, га';
-comment on column street_classify.quater_stat_1080_v8_verify2.area_ha_delta is 'Дельта площади (превышение относительно эталонной)';
-comment on column street_classify.quater_stat_1080_v8_verify2.pop_density is 'Плотность населения, чел./га';
-comment on column street_classify.quater_stat_1080_v8_verify2.pop_density_delta is 'Дельта плотности населения (превышение относительно эталонной)';
-comment on column street_classify.quater_stat_1080_v8_verify2.built_density is 'Плотность застройки';
-comment on column street_classify.quater_stat_1080_v8_verify2.built_density_delta is 'Дельта плотности застройки';
-comment on column street_classify.quater_stat_1080_v8_verify2.residential_median_level is 'Средняя этажность';
-comment on column street_classify.quater_stat_1080_v8_verify2.residential_median_level_delta is 'Дельта по средней этажности';
-comment on column street_classify.quater_stat_1080_v8_verify2.public_transport_access is 'Доступность общественного транспорта';
-comment on column street_classify.quater_stat_1080_v8_verify2.public_transport_access_delta is 'Дельта доступности общественного транспорта';
-comment on column street_classify.quater_stat_1080_v8_verify2.ipa is 'Уровень пешеходной связности прилегающей территории';
-comment on column street_classify.quater_stat_1080_v8_verify2.ipa_delta is 'Дельта уровня пешеходной связности прилегающей территории';
-comment on column street_classify.quater_stat_1080_v8_verify2.ita is 'Уровень транспортной связности прилегающей территории';
-comment on column street_classify.quater_stat_1080_v8_verify2.ita_delta is 'Дельта уровня транспортной связности прилегающей территории';
-comment on column street_classify.quater_stat_1080_v8_verify2.social_access is 'Обеспеченность социальными объектами в пешей доступности';
-comment on column street_classify.quater_stat_1080_v8_verify2.social_access_delta is 'Дельта обеспеченности социальными объектами в пешей доступности';
-comment on column street_classify.quater_stat_1080_v8_verify2.entertainment_access is 'Обеспеченность досуговыми объектами в пешей доступности';
-comment on column street_classify.quater_stat_1080_v8_verify2.entertainment_access_delta is 'Дельта обеспеченности досуговыми объектами в пешей доступности';
-comment on column street_classify.quater_stat_1080_v8_verify2.service_access is 'Обеспеченность сервисной инфраструктурой в пешей доступности';
-comment on column street_classify.quater_stat_1080_v8_verify2.service_access_delta is 'Дельта обеспеченности сервисной инфраструктурой в пешей доступности';
-comment on column street_classify.quater_stat_1080_v8_verify2.greenery_access is 'Обеспеченность озеленёнными территориями в пешей доступности';
-comment on column street_classify.quater_stat_1080_v8_verify2.greenery_access_delta is 'Дельта обеспеченности озеленёнными территориями в пешей доступности';
-comment on column street_classify.quater_stat_1080_v8_verify2.hazardous_dwelling is 'Наличие аварийного жилья в квартале';
-comment on column street_classify.quater_stat_1080_v8_verify2.hazardous_dwelling_delta is 'Дельта от наличия аварийного жилья в квартале';
-comment on column street_classify.quater_stat_1080_v8_verify2.negative_factors is 'Присутствие негативных антропогенных факторов в пешей доступности';
-comment on column street_classify.quater_stat_1080_v8_verify2.negative_factors_delta is 'Дельта от присутствия негативных антропогенных факторов в пешей доступности';
---comment on column street_classify.quater_stat_1080_v8_verify2.far is 'FAR';
-comment on column street_classify.quater_stat_1080_v8_verify2.sum_delta is 'Суммарная дельта по всем показателям  (от 0 до 15. Больше - лучше)';
-comment on column street_classify.quater_stat_1080_v8_verify2.geom is 'Геометрия';
+comment on column street_classify.quater_stat_verify.id is 'Первичный ключ - уникальный id квартала';
+comment on column street_classify.quater_stat_verify.id_gis is 'id_gis города';
+comment on column street_classify.quater_stat_verify.quater_class is 'Тип городской в квартале';
+comment on column street_classify.quater_stat_verify.area_ha is 'Площадь, га';
+comment on column street_classify.quater_stat_verify.area_ha_delta is 'Дельта площади (превышение относительно эталонной)';
+comment on column street_classify.quater_stat_verify.pop_density is 'Плотность населения, чел./га';
+comment on column street_classify.quater_stat_verify.pop_density_delta is 'Дельта плотности населения (превышение относительно эталонной)';
+comment on column street_classify.quater_stat_verify.built_density is 'Плотность застройки';
+comment on column street_classify.quater_stat_verify.built_density_delta is 'Дельта плотности застройки';
+comment on column street_classify.quater_stat_verify.residential_median_level is 'Средняя этажность';
+comment on column street_classify.quater_stat_verify.residential_median_level_delta is 'Дельта по средней этажности';
+comment on column street_classify.quater_stat_verify.public_transport_access is 'Доступность общественного транспорта';
+comment on column street_classify.quater_stat_verify.public_transport_access_delta is 'Дельта доступности общественного транспорта';
+comment on column street_classify.quater_stat_verify.ipa is 'Уровень пешеходной связности прилегающей территории';
+comment on column street_classify.quater_stat_verify.ipa_delta is 'Дельта уровня пешеходной связности прилегающей территории';
+comment on column street_classify.quater_stat_verify.ita is 'Уровень транспортной связности прилегающей территории';
+comment on column street_classify.quater_stat_verify.ita_delta is 'Дельта уровня транспортной связности прилегающей территории';
+comment on column street_classify.quater_stat_verify.social_access is 'Обеспеченность социальными объектами в пешей доступности';
+comment on column street_classify.quater_stat_verify.social_access_delta is 'Дельта обеспеченности социальными объектами в пешей доступности';
+comment on column street_classify.quater_stat_verify.entertainment_access is 'Обеспеченность досуговыми объектами в пешей доступности';
+comment on column street_classify.quater_stat_verify.entertainment_access_delta is 'Дельта обеспеченности досуговыми объектами в пешей доступности';
+comment on column street_classify.quater_stat_verify.service_access is 'Обеспеченность сервисной инфраструктурой в пешей доступности';
+comment on column street_classify.quater_stat_verify.service_access_delta is 'Дельта обеспеченности сервисной инфраструктурой в пешей доступности';
+comment on column street_classify.quater_stat_verify.greenery_access is 'Обеспеченность озеленёнными территориями в пешей доступности';
+comment on column street_classify.quater_stat_verify.greenery_access_delta is 'Дельта обеспеченности озеленёнными территориями в пешей доступности';
+comment on column street_classify.quater_stat_verify.hazardous_dwelling is 'Наличие аварийного жилья в квартале';
+comment on column street_classify.quater_stat_verify.hazardous_dwelling_delta is 'Дельта от наличия аварийного жилья в квартале';
+comment on column street_classify.quater_stat_verify.negative_factors is 'Присутствие негативных антропогенных факторов в пешей доступности';
+comment on column street_classify.quater_stat_verify.negative_factors_delta is 'Дельта от присутствия негативных антропогенных факторов в пешей доступности';
+--comment on column street_classify.quater_stat_verify.far is 'FAR';
+comment on column street_classify.quater_stat_verify.sum_delta is 'Суммарная дельта по всем показателям  (от 0 до 15. Больше - лучше)';
+comment on column street_classify.quater_stat_verify.geom is 'Геометрия';
 
 
 --select * from russia.city where id_gis = 1080
@@ -805,5 +900,5 @@ comment on column street_classify.quater_stat_1080_v8_verify2.geom is 'Геом�
 --	negative_factors_delta "Негативн. антропоген. фактор. в пешей доступн.-дельта",
 --	far "FAR-суммарная площадь футпринта",
 --	sum_delta "Суммарная дельта по всем показателям (от -14 до 0, больше-лучше)"
---from street_classify.quater_stat_1080_v8_verify2
+--from street_classify.quater_stat_verify
 
