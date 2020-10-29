@@ -123,5 +123,139 @@ create index on tmp.corridor using gist(geom);
 
 alter table traffic.city_road_rebuild
 	rename column id to road_segment_id
+
 	
+	
+	
+	
+	
+-- Удалённость городов от локальных и региональных центров
+
+	drop table if exists city;
+create temp table city as
+select
+	c.id_gis,
+	c.city,
+	c.region_name,
+	(st_centroid(c.geom))::geography geog,
+	cn.center,
+	case
+		when st_x(st_centroid(c.geom)) < 60
+			then 'to_the_west'::text 
+		else 'to_the_east'::text
+	end position_relatively_to_ural
+from russia.city c
+left join tmp.tmp_center cn using(id_gis);
+
+create index on city(id_gis);
+create index on city(city);
+create index on city(center);
+create index on city(region_name);
+create index on city using gist(geog);
+
+drop table if exists tmp.tmp_city;
+create table tmp.tmp_city as
+with d_0 as (
+	select
+		c.id_gis,
+		case
+			when d.id_gis is not null 
+				then true
+			else false
+		end "in_2h_msk_spb"
+	from city c
+	left join lateral (
+		select
+			d.id_gis,
+			d.geog			
+		from city d
+		where st_dwithin(c.geog, d.geog, 100000)
+			and d.center = 0
+		limit 1
+	) d on true
+),
+
+d_1 as (
+	select
+		c.id_gis,
+		case
+			when d.id_gis is not null 
+				then true
+			else false
+		end "in_1_5h_betw_reg"
+	from city c
+	left join lateral (
+		select
+			d.id_gis,
+			d.geog			
+		from city d
+		where st_dwithin(c.geog, d.geog, 75000)
+			and d.center = 1
+		limit 1
+	) d on true
+),
+	
+d_2 as (
+	select
+		c.id_gis,
+		case
+			when d.id_gis is not null 
+				then true
+			else false
+		end "in_1h_reg"
+	from city c
+	left join lateral (
+		select
+			d.id_gis,
+			d.geog			
+		from city d
+		where st_dwithin(c.geog, d.geog, 50000)
+			and d.center = 2
+		limit 1
+	) d on true
+),
+
+d_3 as (
+	select
+		c.id_gis,
+		case
+			when d.id_gis is not null 
+				then true
+			else false
+		end "in_0_5h_loc"
+	from city c
+	left join lateral (
+		select
+			d.id_gis,
+			d.geog			
+		from city d
+		where st_dwithin(c.geog, d.geog, 25000)
+			and d.center = 3
+		limit 1
+	) d on true
+)
+
+select 
+	c.id_gis,
+	c.city "Город",
+	c.region_name "Субъект РФ",
+	st_centroid(c.geom)::geometry(point, 4326) geom,
+	cc.center "Центр",
+	cc.position_relatively_to_ural "Полож. относит. Урала",
+	d_0.in_2h_msk_spb "в 2 ч. от МСК/СПБ",
+	d_1.in_1_5h_betw_reg "в 1.5 ч. от межрег ц.",
+	d_2.in_1h_reg "в 1 ч. от рег ц.",
+	d_3.in_0_5h_loc "в 0.5 ч. от лок. ц."
+from russia.city c
+left join city cc using(id_gis)
+left join d_0 using(id_gis)
+left join d_1 using(id_gis)
+left join d_2 using(id_gis)
+left join d_3 using(id_gis)
+order by c.id_gis;
+
+
+
+
+
 	
