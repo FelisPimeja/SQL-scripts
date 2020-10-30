@@ -325,11 +325,11 @@ create temp table stat as
 
 	/* Уровень связанности территории */						
 	pt.public_transport_access, -- Доступность на общественном транспорте/уровень обеспеченности территории/объекта общественным транспортом - пешеходная доступность остановок ОТ, 2 и более видов транспорта в пешеходной доступности.  
-	case 
-		when ita.ita_avg >= 1 then 'Высокая (3)'::text
-		when ita.ita_avg >= 0.1 and ita.ita_avg <= 1 then 'Средняя (2)'::text
-		else 'Низкая (1)'::text
-	end ita, -- Уровень связанности территории/объекта по улично-дорожной сети с другими районами города - Средний уровень интенсивности использования дорог в 10 минутах езды на машине
+--	case 
+--		when ita.ita_avg >= 1 then 'Высокая (3)'::text
+--		when ita.ita_avg >= 0.1 and ita.ita_avg <= 1 then 'Средняя (2)'::text
+--		else 'Низкая (1)'::text
+--	end ita, -- Уровень связанности территории/объекта по улично-дорожной сети с другими районами города - Средний уровень интенсивности использования дорог в 10 минутах езды на машине
 	case 
 		when ipa.ipa_avg >= 1 then 'Высокая (3)'::text
 		when ipa.ipa_avg >= 0.1 and ipa.ipa_avg <= 1 then 'Средняя (2)'::text
@@ -384,7 +384,7 @@ left join hazardous_dwelling h using(id)
 left join negative_factors n using(id)
 left join greenery g using(id)
 left join public_transport pt using(id)
-left join transport_activity ita using(id)
+--left join transport_activity ita using(id)
 left join pedestrian_activity ipa using(id)
 left join poi p using(id)
 left join far_gba f using(id)
@@ -553,15 +553,15 @@ select
 		when ipa = 'Низкая (1)'
 			then -2::smallint
 	end ipa_delta,
-	ita,
-	case
-		when ita = 'Высокая (3)'
-			then 0::smallint
-		when ita = 'Средняя (2)'
-			then -1::smallint
-		when ita = 'Низкая (1)'
-			then -2::smallint
-	end ita_delta,
+--	ita,
+--	case
+--		when ita = 'Высокая (3)'
+--			then 0::smallint
+--		when ita = 'Средняя (2)'
+--			then -1::smallint
+--		when ita = 'Низкая (1)'
+--			then -2::smallint
+--	end ita_delta,
 	social_access,
 	case 
 		when quater_class in ('Индивидуальная жилая городская среда', 'Советская малоэтажная разреженная городская среда', 'Современная малоэтажная разреженная городская среда', 'Позднесоветская малоэтажная разреженная городская среда') 
@@ -732,9 +732,9 @@ select
 	ipa,
 	'Высокий (3)'::text ipa_reference,
 	ipa_delta,
-	ita,
-	'Высокий (3)'::text ita_reference,
-	ita_delta,
+--	ita,
+--	'Высокий (3)'::text ita_reference,
+--	ita_delta,
 	social_access,
 	case
 		when quater_class in ('Индивидуальная жилая городская среда', 'Советская малоэтажная разреженная городская среда', 'Современная малоэтажная разреженная городская среда', 'Позднесоветская малоэтажная разреженная городская среда')
@@ -787,7 +787,7 @@ select
 		(case when pop_density_delta <> 0 then -1 else 0 end) + 
 		(case when built_density_delta <> 0 then -1 else 0 end) +
 		(case when residential_median_level_delta <> 0 then -1 else 0 end) +
-		public_transport_access_delta + ipa_delta + ita_delta +
+		public_transport_access_delta + ipa_delta + --ita_delta +
 		social_access_delta + entertainment_access_delta +
 		service_access_delta + greenery_access_delta + 
 		hazardous_dwelling_delta + negative_factors_delta + odz_area_percent_delta + 15
@@ -823,9 +823,9 @@ comment on column street_classify.quater_stat_verify.public_transport_access_del
 comment on column street_classify.quater_stat_verify.ipa is 'Уровень пешеходной связности прилегающей территории';
 comment on column street_classify.quater_stat_verify.ipa_reference is 'Уровень пешеходной связности прилегающей территории целевлй';
 comment on column street_classify.quater_stat_verify.ipa_delta is 'Дельта уровня пешеходной связности прилегающей территории';
-comment on column street_classify.quater_stat_verify.ita is 'Уровень транспортной связности прилегающей территории';
-comment on column street_classify.quater_stat_verify.ita_reference is 'Уровень транспортной связности прилегающей территории целевой';
-comment on column street_classify.quater_stat_verify.ita_delta is 'Дельта уровня транспортной связности прилегающей территории';
+--comment on column street_classify.quater_stat_verify.ita is 'Уровень транспортной связности прилегающей территории';
+--comment on column street_classify.quater_stat_verify.ita_reference is 'Уровень транспортной связности прилегающей территории целевой';
+--comment on column street_classify.quater_stat_verify.ita_delta is 'Дельта уровня транспортной связности прилегающей территории';
 comment on column street_classify.quater_stat_verify.social_access is 'Обеспеченность социальными объектами в пешей доступности';
 comment on column street_classify.quater_stat_verify.social_access_reference is 'Обеспеченность социальными объектами в пешей доступности целевая';
 comment on column street_classify.quater_stat_verify.social_access_delta is 'Дельта обеспеченности социальными объектами в пешей доступности';
@@ -892,9 +892,9 @@ comment on column street_classify.quater_stat_verify.geom is 'Геометрия
 --	ipa "Ур. пешей связн. с прилег. терр.",
 --	ipa_reference "Ур. пешей связн. с прилег. терр.-целевой",
 --	ipa_delta "Ур. пешей связн. с прилег. терр.- дельта",
---	ita "Ур. трансп. связн. с прилег. терр.",
---	ita_reference "Ур. трансп. связн. с прилег. терр.-целевой",
---	ita_delta "Ур. трансп. связн. с прилег. терр.-дельта",
+--	--ita "Ур. трансп. связн. с прилег. терр.",
+--	--ita_reference "Ур. трансп. связн. с прилег. терр.-целевой",
+--	--ita_delta "Ур. трансп. связн. с прилег. терр.-дельта",
 --	social_access "Обеспеч. соц. объект. в пешей доступн.",
 --	social_access_reference "Обеспеч. соц. объект. в пешей доступн.-целев.",
 --	social_access_delta "Обеспеч. соц. объект. в пешей доступн.-дельта",
