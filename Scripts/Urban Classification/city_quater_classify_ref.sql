@@ -152,17 +152,6 @@ create index on tmp.chelyabinsk_service_area(id_gis);
 */
 
 
-
---!!! Перезалить таблицу на всю Россию потом !!!
---create table street_classify.ipa as select (row_number() over())::int id, ipa::numeric, id_gis::int2, geom from tmp.ipa_st_geom;
---alter table street_classify.ipa add primary key(id);
---create index on street_classify.ipa(id_gis); 
---create index on street_classify.ipa(ipa); 
---create index on street_classify.ipa using gist(geom); 
---create index on street_classify.ipa ((st_length(geom::geography))); 
---!!!
-
-
 -- Пешеходная активность (~ 2 мин)
 drop table if exists pedestrian_activity;
 create temp table pedestrian_activity as 
@@ -171,7 +160,7 @@ select
 	q.id_gis,
 	coalesce(round((sum(i.ipa * st_length(i.geom::geography, true)) / nullif(sum(st_length(i.geom::geography, true)), 0))::numeric, 2), 0) ipa_avg -- усреднённый индекс пешеходной активности
 from quater_buffer q
-left join street_classify.ipa i
+left join russia.city_ipa i
 	on q.id_gis = i.id_gis
 		and st_intersects(q.geom, i.geom)
 group by q.id, q.id_gis;
@@ -268,7 +257,7 @@ create temp table far_gba as
 select 
 	q.id,
 	q.id_gis,
-	sum(area_m2) far_m2,
+	sum(area_m2)::int4 far_m2,
 	sum(area_m2 * levels) gba_m2,
 	percentile_disc(0.5) within group(order by b.levels) filter(where b.building_type != 'other') residential_median_level
 from quater_buffer q
@@ -337,39 +326,39 @@ create temp table stat as
 	/* Уровень связанности территории */						
 	pt.public_transport_access, -- Доступность на общественном транспорте/уровень обеспеченности территории/объекта общественным транспортом - пешеходная доступность остановок ОТ, 2 и более видов транспорта в пешеходной доступности.  
 	case 
-		when ita.ita_avg >= 1 then 'Высокая (3)'::varchar
-		when ita.ita_avg >= 0.1 and ita.ita_avg <= 1 then 'Средняя (2)'::varchar
-		else 'Низкая (1)'::varchar
+		when ita.ita_avg >= 1 then 'Высокая (3)'::text
+		when ita.ita_avg >= 0.1 and ita.ita_avg <= 1 then 'Средняя (2)'::text
+		else 'Низкая (1)'::text
 	end ita, -- Уровень связанности территории/объекта по улично-дорожной сети с другими районами города - Средний уровень интенсивности использования дорог в 10 минутах езды на машине
 	case 
-		when ipa.ipa_avg >= 1 then 'Высокая (3)'::varchar
-		when ipa.ipa_avg >= 0.1 and ipa.ipa_avg <= 1 then 'Средняя (2)'::varchar
-		else 'Низкая (1)'::varchar
+		when ipa.ipa_avg >= 1 then 'Высокая (3)'::text
+		when ipa.ipa_avg >= 0.1 and ipa.ipa_avg <= 1 then 'Средняя (2)'::text
+		else 'Низкая (1)'::text
 	end ipa, -- Уровень пешеходной связанности территории/объекта с прилегающими территориями - Средний уровень интенсивности использования пешеходных путей в радиусе пешеходной досупности
 
 	/* Обеспеченность сервисами */					
 	case
 		when p.school_kindergarden is true and p.clinic is true 
-			then 'Высокая (3)'::varchar
+			then 'Высокая (3)'::text
 		when p.school_kindergarden is true and p.clinic is false
-			then 'Средняя (2)'::varchar
-		else 'Низкая (1)'::varchar
+			then 'Средняя (2)'::text
+		else 'Низкая (1)'::text
 	end social_access,	-- Обеспеченность социальными объектами в пешеходной доступности - берем отдельно все объекты этой группы и смотрим пешеходную доступность: школы, детские сады, поликлиники, больницы.
 		--	Высокая - когда все вышеперечисленное есть.
 		--	Средняя - когда есть школа и детский сад
 		--	Низкая - когда нет ничего или только поликлиника/больница
 	case
-		when p.entertainment >= 3 then 'Высокая (3)'::varchar
-		when p.entertainment = 2 then 'Средняя (2)'::varchar
-		else 'Низкая (1)'::varchar
+		when p.entertainment >= 3 then 'Высокая (3)'::text
+		when p.entertainment = 2 then 'Средняя (2)'::text
+		else 'Низкая (1)'::text
 	end entertainment_access,	-- Обеспеченность досуговыми и объектами культуры в пешеходной доступности - берем отдельно все объекты этой группы и смотрим пешеходную доступность: театры, музеи, галлереи, планитарий, зоопарк, итд.
 		--	Высокая - когда есть 3 и более вида досуговых объектов в пешеходной доступности.
 		--	Средняя - когда есть 3 вида досуговых объектов в пешеходной доступности
 		--	Низкая - когда есть 1 вид досуговых объектов или они отсутствуют в пешеходной доступности
 	case
-		when p.mall is true then 'Высокая (3)'::varchar
-		when p.service >= 5 then 'Средняя (2)'::varchar
-		else 'Низкая (1)'::varchar
+		when p.mall is true then 'Высокая (3)'::text
+		when p.service >= 5 then 'Средняя (2)'::text
+		else 'Низкая (1)'::text
 	end service_access,	-- Обеспеченность объектами сервисной инфраструктуры - берем объекты ритейла.
 		--	Высокая - ТЦ в пешеходной доступности, высокое разнообразие сервисов.
 		--	Средняя - Наличие базовых профилей ритейла в пешеходной доступности (продукты, хозяйственные, кафе, рестораны, салоны красоты, парикмахерские, ремонтные мастерские).
@@ -817,37 +806,66 @@ comment on column street_classify.quater_stat_verify.id is 'Первичный �
 comment on column street_classify.quater_stat_verify.id_gis is 'id_gis города';
 comment on column street_classify.quater_stat_verify.quater_class is 'Тип городской в квартале';
 comment on column street_classify.quater_stat_verify.area_ha is 'Площадь, га';
+comment on column street_classify.quater_stat_verify.area_ha_reference is 'Площадь целевая, га';
 comment on column street_classify.quater_stat_verify.area_ha_delta is 'Дельта площади (превышение относительно эталонной)';
 comment on column street_classify.quater_stat_verify.pop_density is 'Плотность населения, чел./га';
+comment on column street_classify.quater_stat_verify.pop_density_reference is 'Плотность населения целевая, чел./га';
 comment on column street_classify.quater_stat_verify.pop_density_delta is 'Дельта плотности населения (превышение относительно эталонной)';
 comment on column street_classify.quater_stat_verify.built_density is 'Плотность застройки';
+comment on column street_classify.quater_stat_verify.built_density_reference is 'Плотность застройки целевая';
 comment on column street_classify.quater_stat_verify.built_density_delta is 'Дельта плотности застройки';
 comment on column street_classify.quater_stat_verify.residential_median_level is 'Средняя этажность';
+comment on column street_classify.quater_stat_verify.residential_median_level_reference is 'Средняя этажность целевая';
 comment on column street_classify.quater_stat_verify.residential_median_level_delta is 'Дельта по средней этажности';
 comment on column street_classify.quater_stat_verify.public_transport_access is 'Доступность общественного транспорта';
+comment on column street_classify.quater_stat_verify.public_transport_access_reference is 'Доступность общественного транспорта целевая';
 comment on column street_classify.quater_stat_verify.public_transport_access_delta is 'Дельта доступности общественного транспорта';
 comment on column street_classify.quater_stat_verify.ipa is 'Уровень пешеходной связности прилегающей территории';
+comment on column street_classify.quater_stat_verify.ipa_reference is 'Уровень пешеходной связности прилегающей территории целевлй';
 comment on column street_classify.quater_stat_verify.ipa_delta is 'Дельта уровня пешеходной связности прилегающей территории';
 comment on column street_classify.quater_stat_verify.ita is 'Уровень транспортной связности прилегающей территории';
+comment on column street_classify.quater_stat_verify.ita_reference is 'Уровень транспортной связности прилегающей территории целевой';
 comment on column street_classify.quater_stat_verify.ita_delta is 'Дельта уровня транспортной связности прилегающей территории';
 comment on column street_classify.quater_stat_verify.social_access is 'Обеспеченность социальными объектами в пешей доступности';
+comment on column street_classify.quater_stat_verify.social_access_reference is 'Обеспеченность социальными объектами в пешей доступности целевая';
 comment on column street_classify.quater_stat_verify.social_access_delta is 'Дельта обеспеченности социальными объектами в пешей доступности';
 comment on column street_classify.quater_stat_verify.entertainment_access is 'Обеспеченность досуговыми объектами в пешей доступности';
+comment on column street_classify.quater_stat_verify.entertainment_access_reference is 'Обеспеченность досуговыми объектами в пешей доступности целевая';
 comment on column street_classify.quater_stat_verify.entertainment_access_delta is 'Дельта обеспеченности досуговыми объектами в пешей доступности';
 comment on column street_classify.quater_stat_verify.service_access is 'Обеспеченность сервисной инфраструктурой в пешей доступности';
+comment on column street_classify.quater_stat_verify.service_access_reference is 'Обеспеченность сервисной инфраструктурой в пешей доступности целевая';
 comment on column street_classify.quater_stat_verify.service_access_delta is 'Дельта обеспеченности сервисной инфраструктурой в пешей доступности';
 comment on column street_classify.quater_stat_verify.greenery_access is 'Обеспеченность озеленёнными территориями в пешей доступности';
+comment on column street_classify.quater_stat_verify.greenery_access_reference is 'Обеспеченность озеленёнными территориями в пешей доступности целевая';
 comment on column street_classify.quater_stat_verify.greenery_access_delta is 'Дельта обеспеченности озеленёнными территориями в пешей доступности';
+comment on column street_classify.quater_stat_verify.odz_area_percent is 'Процент помещений объектов общественно-деловой инфраструктуры от общей площади площади застройки территории';
+comment on column street_classify.quater_stat_verify.odz_area_percent_reference is 'Процент помещений объектов общественно-деловой инфраструктуры от общей площади площади застройки территории целевой';
+comment on column street_classify.quater_stat_verify.odz_area_percent_delta is 'Дельта процента помещений объектов общественно-деловой инфраструктуры от общей площади площади застройки территории';
 comment on column street_classify.quater_stat_verify.hazardous_dwelling is 'Наличие аварийного жилья в квартале';
+comment on column street_classify.quater_stat_verify.hazardous_dwelling_reference is 'Наличие аварийного жилья в квартале целевое';
 comment on column street_classify.quater_stat_verify.hazardous_dwelling_delta is 'Дельта от наличия аварийного жилья в квартале';
 comment on column street_classify.quater_stat_verify.negative_factors is 'Присутствие негативных антропогенных факторов в пешей доступности';
+comment on column street_classify.quater_stat_verify.negative_factors_reference is 'Присутствие негативных антропогенных факторов в пешей доступности целевое';
 comment on column street_classify.quater_stat_verify.negative_factors_delta is 'Дельта от присутствия негативных антропогенных факторов в пешей доступности';
---comment on column street_classify.quater_stat_verify.far is 'FAR';
+comment on column street_classify.quater_stat_verify.far is 'Плотность застройки по футпринту здания (FAR)';
 comment on column street_classify.quater_stat_verify.sum_delta is 'Суммарная дельта по всем показателям  (от 0 до 15. Больше - лучше)';
 comment on column street_classify.quater_stat_verify.geom is 'Геометрия';
 
 
 --select * from russia.city where id_gis = 1080
+
+
+
+
+--!!! Создание таблицы ipa !!!
+--create table russia.city_ipa as select (row_number() over())::int id, ipa::numeric, id_gis::int2, fclass, road_class, geom from tmp.ipa_st_geom;
+--alter table russia.city_ipa add primary key(id);
+--create index on russia.city_ipa(id_gis); 
+--create index on russia.city_ipa(ipa); 
+--create index on russia.city_ipa using gist(geom); 
+--create index on russia.city_ipa((st_length(geom::geography))); 
+--!!!
+
 
 
 
