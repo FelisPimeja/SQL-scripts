@@ -297,4 +297,73 @@ left join d_3 using(id_gis)
 order by c.id_gis;
 
 
+
+
+-- Подсчёт разной статистики по регионам 
+with urban_area as (
+	select 
+		r.name,
+		sum(u.area_ha) * 10000 urban_area_m2
+	from russia.region_boundary_land r
+	join russia.city_built_area_light u 
+		on st_intersects(st_centroid(u.geom), r.geom)
+	group by r.name
+),
+okn_count as (
+	select
+		r.name,
+		count(o.*) total_okn	
+	from russia.region_boundary_land r
+	join index2019.data_okn o
+		on st_intersects(o.geom, r.geom)
+	group by r.name
+),
+oopt as (
+	select 
+		r.name,
+		sum(st_area(st_intersection(o.geom, r.geom)::geography)) oopt_area_m2
+	from russia.region_boundary_land r
+	join russia.oopt o 
+		on st_intersects(o.geom, r.geom)
+	group by r.name
+),
+airport as (
+	select
+		r.name,
+		count(a.*) total_airport	
+	from russia.region_boundary_land r
+	join world.airport_icao a
+		on st_intersects(a.geom, r.geom)
+	group by r.name
+),
+station as (
+	select
+		r.name,
+		count(rs.*) total_railway_station	
+	from russia.region_boundary_land r
+	join russia.rzd_railway_station rs
+		on st_intersects(rs.geom, r.geom)
+	group by r.name
+)
+select
+	(row_number() over())::int id,
+	r.name,
+	st_area(r.geom::geography) area_m2,
+	u.urban_area_m2,
+	o.total_okn,
+	oo.oopt_area_m2,
+	coalesce(a.total_airport, 0),
+	coalesce(s.total_railway_station, 0)
+from russia.region_boundary_land r
+left join urban_area u using(name)
+left join okn_count o using(name)
+left join oopt oo using(name)
+left join airport a using(name)
+left join station s using(name)
+order by r.name;
+
+
+
+
+
 	
