@@ -310,22 +310,122 @@ with urban_area as (
 	group by r.name
 ),
 okn_count as (
+	select 
+		c.region_name "name",
+		count(o.*) total_okn
+	from (select distinct region_name from russia.city) c
+	left join russia.raw_okn o
+		on (
+			o."Регион" = c.region_name
+				or (
+					o."Регион" = 'г. Москва'
+						and c.region_name = 'Город федерального значения Москва'
+				)
+				or (
+					o."Регион" = 'г. Санкт-Петербург'
+						and c.region_name = 'Город федерального значения Санкт-Петербург'
+				)
+				or (
+					o."Регион" = 'г. Севастополь'
+						and c.region_name = 'Город федерального значения Севастополь'
+				)
+				or (
+					o."Регион" = 'Кемеровская область'
+						and c.region_name = 'Кемеровская область — Кузбасс'
+				)
+				or (
+					o."Регион" = 'Республика Адыгея (Адыгея)'
+						and c.region_name = 'Республика Адыгея'
+				)
+				or (
+					o."Регион" = 'Республика Северная Осетия - Алания'
+						and c.region_name = 'Республика Северная Осетия — Алания'
+				)
+				or (
+					o."Регион" = 'Республика Татарстан (Татарстан)'
+						and c.region_name = 'Республика Татарстан'
+				)
+				or (
+					o."Регион" = 'Чувашская Республика - Чувашия'
+						and c.region_name = 'Чувашская Республика'
+				)
+		)
+	group by c.region_name
+	order by total_okn desc
+),
+historic as (
 	select
 		r.name,
-		count(o.*) total_okn	
+		coalesce(sum(q.area_ha * 10000), 0) historic_area_m2
 	from russia.region_boundary_land r
-	join index2019.data_okn o
-		on st_intersects(o.geom, r.geom)
+	join (
+		select
+			c.region_name "name",
+			q.area_ha
+		from russia.city c
+		left join russia.city_quater_type q 
+			on c.id_gis = q.id_gis 
+				and q.quater_class = 'Историческая смешанная городская среда'
+	) q using("name")
 	group by r.name
 ),
 oopt as (
 	select 
 		r.name,
-		sum(st_area(st_intersection(o.geom, r.geom)::geography)) oopt_area_m2
+		round(sum(st_area(st_intersection(o.geom, r.geom)::geography))::numeric) oopt_area_m2
 	from russia.region_boundary_land r
 	join russia.oopt o 
 		on st_intersects(o.geom, r.geom)
 	group by r.name
+),
+climate as (
+	select
+		r.name,
+		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'BSk')))::geography)::numeric), 0) area_BSk_m2,
+		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'Cfa')))::geography)::numeric), 0) area_Cfa_m2,
+		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'Cfb')))::geography)::numeric), 0) area_Cfb_m2,
+		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'Csa')))::geography)::numeric), 0) area_Csa_m2,
+		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'Dfa')))::geography)::numeric), 0) area_Dfa_m2,
+		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'Dfb')))::geography)::numeric), 0) area_Dfb_m2,
+		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'Dfc')))::geography)::numeric), 0) area_Dfc_m2,
+		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'Dfd')))::geography)::numeric), 0) area_Dfd_m2,
+		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'Dsc')))::geography)::numeric), 0) area_Dsc_m2,
+		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'Dsd')))::geography)::numeric), 0) area_Dsd_m2,
+		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'Dwa')))::geography)::numeric), 0) area_Dwa_m2,
+		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'Dwb')))::geography)::numeric), 0) area_Dwb_m2,
+		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'Dwc')))::geography)::numeric), 0) area_Dwc_m2,
+		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'Dwd')))::geography)::numeric), 0) area_Dwd_m2,
+		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'EF')))::geography)::numeric), 0) area_EF_m2,
+		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'ET')))::geography)::numeric), 0) area_ET_m2
+	from russia.osm_admin_boundary_region r
+	left join world.koppen_geiger_climate_classify k
+		on st_intersects(r.geom, k.geom)
+			and k.time_interval = '1976-2000'
+	group by r.name, r.geom
+),
+region_by_auto as(
+	select
+		c1.region_name "name",
+		count(c2.id_gis) num_region_by_auto,
+		array_to_string(array_agg(c2.city || ' (' || c2.region_name || ')'), ', ') list_region_by_auto
+	from russia.city c1
+	left join russia.city c2
+		on c1.id_gis <> c2.id_gis 
+			and c2.region_capital is true
+			and st_dwithin(st_centroid(c1.geom)::geography, st_centroid(c2.geom)::geography, 3 * 80000)
+	where c1.region_capital is true
+	group by c1.region_name 
+),
+region_by_train as(
+	select
+		c1.region_name "name",
+		count(c2.id_gis) num_region_by_train,
+		array_to_string(array_agg(c2.city || ' (' || c2.region_name || ')'), ', ') list_region_by_train
+	from (select distinct on(c.id_gis) c.* from russia.city c join russia.rzd_railway_station s using(id_gis) where c.region_capital is true) c1
+	left join (select distinct on(c.id_gis) c.* from russia.city c join russia.rzd_railway_station s using(id_gis) where c.region_capital is true) c2
+		on c1.id_gis <> c2.id_gis 
+			and st_dwithin(st_centroid(c1.geom)::geography, st_centroid(c2.geom)::geography, 3 * 50000)
+	group by c1.region_name 
 ),
 airport as (
 	select
@@ -349,18 +449,48 @@ select
 	(row_number() over())::int id,
 	r.name,
 	st_area(r.geom::geography) area_m2,
-	u.urban_area_m2,
-	o.total_okn,
-	oo.oopt_area_m2,
-	coalesce(a.total_airport, 0),
-	coalesce(s.total_railway_station, 0)
+	coalesce(u.urban_area_m2, 0) urban_area_m2,
+	coalesce(o.total_okn, 0) total_okn,
+	coalesce(h.historic_area_m2, 0) historic_area_m2,
+	coalesce(oo.oopt_area_m2, 0) oopt_area_m2,
+	coalesce(c.area_BSk_m2, 0) area_BSk_m2,
+	coalesce(c.area_Cfa_m2, 0) area_Cfa_m2,
+	coalesce(c.area_Cfb_m2, 0) area_Cfb_m2,
+	coalesce(c.area_Csa_m2, 0) area_Csa_m2,
+	coalesce(c.area_Dfa_m2, 0) area_Dfa_m2,
+	coalesce(c.area_Dfb_m2, 0) area_Dfb_m2,
+	coalesce(c.area_Dfc_m2, 0) area_Dfc_m2,
+	coalesce(c.area_Dfd_m2, 0) area_Dfd_m2,
+	coalesce(c.area_Dsc_m2, 0) area_Dsc_m2,
+	coalesce(c.area_Dsd_m2, 0) area_Dsd_m2,
+	coalesce(c.area_Dwa_m2, 0) area_Dwa_m2,
+	coalesce(c.area_Dwb_m2, 0) area_Dwb_m2,
+	coalesce(c.area_Dwc_m2, 0) area_Dwc_m2,
+	coalesce(c.area_Dwd_m2, 0) area_Dwd_m2,
+	coalesce(c.area_EF_m2, 0) area_EF_m2,
+	coalesce(c.area_ET_m2, 0) area_ET_m2,
+	coalesce(ra.num_region_by_auto, 0) num_region_by_auto,
+	coalesce(ra.list_region_by_auto, '') list_region_by_auto,
+	coalesce(rt.num_region_by_train, 0) num_region_by_train,
+	coalesce(rt.list_region_by_train, '') list_region_by_train,
+	coalesce(a.total_airport, 0) total_airport,
+	coalesce(s.total_railway_station, 0) total_railway_station
 from russia.region_boundary_land r
 left join urban_area u using(name)
 left join okn_count o using(name)
 left join oopt oo using(name)
 left join airport a using(name)
 left join station s using(name)
-order by r.name;
+left join historic h using(name)
+left join climate c using(name)
+left join region_by_auto ra using(name)
+left join region_by_train rt using(name)
+order by r.name
+
+
+
+
+
 
 
 
