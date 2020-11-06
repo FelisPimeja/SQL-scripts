@@ -299,7 +299,8 @@ order by c.id_gis;
 
 
 
--- Подсчёт разной статистики по регионам 
+/* Подсчёт разной статистики по регионам для оценки туристической привлекательности */
+
 with urban_area as (
 	select 
 		r.name,
@@ -422,9 +423,12 @@ region_by_train as(
 		count(c2.id_gis) num_region_by_train,
 		array_to_string(array_agg(c2.city || ' (' || c2.region_name || ')'), ', ') list_region_by_train
 	from (select distinct on(c.id_gis) c.* from russia.city c join russia.rzd_railway_station s using(id_gis) where c.region_capital is true) c1
-	left join (select distinct on(c.id_gis) c.* from russia.city c join russia.rzd_railway_station s using(id_gis) where c.region_capital is true) c2
+	join (select distinct on(c.id_gis) c.* from russia.city c join russia.rzd_railway_station s using(id_gis) where c.region_capital is true) c2
 		on c1.id_gis <> c2.id_gis 
 			and st_dwithin(st_centroid(c1.geom)::geography, st_centroid(c2.geom)::geography, 3 * 50000)
+	where c1.city not in ('Брянск', 'Владикавказ', 'Казань', 'Краснодар', 'Нальчик', 'Рязань', 'Тула', 'Ставрополь', 'Томск', 'Чебоксары')
+		and not(c1.city = 'Воронеж' and c2.city = 'Липецк')
+		and not(c2.city = 'Воронеж' and c1.city = 'Липецк')	
 	group by c1.region_name 
 ),
 airport as (
@@ -445,36 +449,36 @@ station as (
 		on st_intersects(rs.geom, r.geom)
 	group by r.name
 )
-select
+select distinct on(r.name)
 	(row_number() over())::int id,
-	r.name,
-	st_area(r.geom::geography) area_m2,
-	coalesce(u.urban_area_m2, 0) urban_area_m2,
-	coalesce(o.total_okn, 0) total_okn,
-	coalesce(h.historic_area_m2, 0) historic_area_m2,
-	coalesce(oo.oopt_area_m2, 0) oopt_area_m2,
-	coalesce(c.area_BSk_m2, 0) area_BSk_m2,
-	coalesce(c.area_Cfa_m2, 0) area_Cfa_m2,
-	coalesce(c.area_Cfb_m2, 0) area_Cfb_m2,
-	coalesce(c.area_Csa_m2, 0) area_Csa_m2,
-	coalesce(c.area_Dfa_m2, 0) area_Dfa_m2,
-	coalesce(c.area_Dfb_m2, 0) area_Dfb_m2,
-	coalesce(c.area_Dfc_m2, 0) area_Dfc_m2,
-	coalesce(c.area_Dfd_m2, 0) area_Dfd_m2,
-	coalesce(c.area_Dsc_m2, 0) area_Dsc_m2,
-	coalesce(c.area_Dsd_m2, 0) area_Dsd_m2,
-	coalesce(c.area_Dwa_m2, 0) area_Dwa_m2,
-	coalesce(c.area_Dwb_m2, 0) area_Dwb_m2,
-	coalesce(c.area_Dwc_m2, 0) area_Dwc_m2,
-	coalesce(c.area_Dwd_m2, 0) area_Dwd_m2,
-	coalesce(c.area_EF_m2, 0) area_EF_m2,
-	coalesce(c.area_ET_m2, 0) area_ET_m2,
-	coalesce(ra.num_region_by_auto, 0) num_region_by_auto,
-	coalesce(ra.list_region_by_auto, '') list_region_by_auto,
-	coalesce(rt.num_region_by_train, 0) num_region_by_train,
-	coalesce(rt.list_region_by_train, '') list_region_by_train,
-	coalesce(a.total_airport, 0) total_airport,
-	coalesce(s.total_railway_station, 0) total_railway_station
+	r.name "Субъект РФ",
+	st_area(r.geom::geography) "Площадь, м2",
+	coalesce(u.urban_area_m2, 0)  "Площ. урбан. терр., м2",
+	coalesce(o.total_okn, 0)  "Всего ОКН, шт.",
+	coalesce(h.historic_area_m2, 0)  "Площ. истор.-смеш. застр., м2",
+	coalesce(oo.oopt_area_m2, 0)  "Площ. ООПТ, м2",
+	coalesce(c.area_BSk_m2, 0) "Площ. в клим. зоне BSk, м2",
+	coalesce(c.area_Cfa_m2, 0) "Площ. в клим. зоне Cfa, м2",
+	coalesce(c.area_Cfb_m2, 0) "Площ. в клим. зоне Cfb, м2",
+	coalesce(c.area_Csa_m2, 0) "Площ. в клим. зоне Csa, м2",
+	coalesce(c.area_Dfa_m2, 0) "Площ. в клим. зоне Dfa, м2",
+	coalesce(c.area_Dfb_m2, 0) "Площ. в клим. зоне Dfb, м2",
+	coalesce(c.area_Dfc_m2, 0) "Площ. в клим. зоне Dfc, м2",
+	coalesce(c.area_Dfd_m2, 0) "Площ. в клим. зоне Dfd, м2",
+	coalesce(c.area_Dsc_m2, 0) "Площ. в клим. зоне Dsc, м2",
+	coalesce(c.area_Dsd_m2, 0) "Площ. в клим. зоне Dsd, м2",
+	coalesce(c.area_Dwa_m2, 0) "Площ. в клим. зоне Dwa, м2",
+	coalesce(c.area_Dwb_m2, 0) "Площ. в клим. зоне Dwb, м2",
+	coalesce(c.area_Dwc_m2, 0) "Площ. в клим. зоне Dwc, м2",
+	coalesce(c.area_Dwd_m2, 0) "Площ. в клим. зоне Dwd, м2",
+	coalesce(c.area_EF_m2, 0) "Площ. в клим. зоне EF, м2",
+	coalesce(c.area_ET_m2, 0) "Площ. в клим. зоне ET, м2",
+	coalesce(ra.num_region_by_auto, 0)  "Кол-во 3 ч. авт. дост.",
+	coalesce(ra.list_region_by_auto, '')  "Список 3 ч. авт. дост.",
+	coalesce(rt.num_region_by_train, 0)  "Кол-во 3 ч. жд. дост.",
+	coalesce(rt.list_region_by_train, '')  "Список 3 ч. жд. дост.",
+	coalesce(a.total_airport, 0)  "Всего аэропорт., шт.",
+	coalesce(s.total_railway_station, 0)  "Всего жд. станц., шт."
 from russia.region_boundary_land r
 left join urban_area u using(name)
 left join okn_count o using(name)
@@ -485,7 +489,11 @@ left join historic h using(name)
 left join climate c using(name)
 left join region_by_auto ra using(name)
 left join region_by_train rt using(name)
-order by r.name
+order by r.name;
+
+
+
+
 
 
 
