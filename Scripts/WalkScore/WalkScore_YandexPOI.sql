@@ -46,6 +46,7 @@ select distinct on (p.company_id)
 from city c
 left join index2019.data_poi p using(id_gis);
 
+-- Добавляем точки точки зелёных насаждений общего пользования из контуров "благоустроенного озеленения" из состава Индекса качества городской среды 2019
 insert into poi (id_gis, geom, wlk_ind)
 select
 	g.id_gis,
@@ -53,18 +54,20 @@ select
 	13::smallint wlk_ind
 from city c
 left join index2019.data_greenery g using (id_gis);
-	
+
+-- Индексы
 alter table poi add column id serial primary key;
 create index on poi(id_gis);
 create index on poi(wlk_ind);
 create index on poi using gist(geom);
 create index on poi using gist((geom::geography));
 
-drop table if exists walkscore.poi_t;
-create table walkscore.poi_t as select * from poi;
+--drop table if exists walkscore.poi_t;
+--create table walkscore.poi_t as select * from poi;
+
 
 /* Расчёт WalkScore */
-
+-- Расчёт исходных расстояний до ближайших точек
 drop table if exists sc;
 create temp table sc as 
 --explain
@@ -283,6 +286,7 @@ left join lateral (
 	limit 1
 ) p15 on true;
 
+-- Подсчёт средневзвешенных групповых значений индекса
 drop table if exists r0;
 create temp table r0 as 
 select
@@ -340,6 +344,7 @@ from sc;
 
 --create index on index2019.data_hexgrid using gist((st_centroid(geom)::geography));
 
+-- Второй шаг взвешивания групп
 drop table if exists r1;
 create temp table r1 as 
 select
@@ -387,6 +392,7 @@ select
 from r0
 join sc using(id);
 
+-- Расчёт итогового индекса WalkScore
 drop table if exists walkscore.walkscore2019;
 create table walkscore.walkscore2019 as
 select
@@ -419,7 +425,7 @@ left join index2019.data_hexgrid g using(id_gis)
 left join sc using(id)
 left join r1 using(id);
 
-/* первичный ключ и индексы*/
+/* Первичный ключ и индексы*/
 alter table walkscore.walkscore2019 add primary key(id);
 create index on walkscore.walkscore2019 (id_gis);
 create index on walkscore.walkscore2019 (kind);
@@ -446,7 +452,7 @@ create index on walkscore.walkscore2019 (r_all);
 create index on walkscore.walkscore2019 using gist(geom);
 --cluster walkscore.walkscore using walkscore_geom_idx; -- Ахтунг - кластеризация занимает 25 часов!!!
 
-/* комментарии */
+/* Комментарии */
 comment on table walkscore.walkscore2019 is 'Индекс пешеходной доступности WalkScore посчитанный на данных Яндекс 2019 и гексагональной сетке 1 га, построенной для Индекса качества городской среды 2019';
 comment on column walkscore.walkscore2019.id is 'Первичный ключ';
 comment on column walkscore.walkscore2019.id_gis is 'id_gis города';
