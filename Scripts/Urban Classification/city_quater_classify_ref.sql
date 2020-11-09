@@ -15,7 +15,11 @@ from russia.city_quater_type q
 where q.id_gis in(
 	44,256,288,290,797,812,871,926,927,932,943,952,955,
 	960,991,992,1010,1031,1034,1040,1047,1050,1061,
-	1065,1071,1075,1080,1082,1096,1099,1101,1104
+	1065,1071,1075,1080,1082,1096,1099,1101,1104,
+	985,901,1021,1050,1067,991,1064,1034,1016,982,
+	1078,1054,1062,1031,1065,1030,1046,1037,998,989,
+	1083,1075,1066,1052,1048,1024,1012,1007,1000,1039,
+	1044,999,990,1055,1023,1070,1069,1018,597,994,1019
 ); --целевые id_gis для 32 городов для проекта Стандарта Мастер плана
 
 create index on quater_buffer(id);
@@ -258,7 +262,7 @@ select
 	q.id,
 	q.id_gis,
 	sum(area_m2)::int4 far_m2,
-	sum(area_m2 * levels) gba_m2,
+	sum(area_m2 * (case when levels is null then 1 else levels end)) gba_m2,
 	percentile_disc(0.5) within group(order by b.levels) filter(where b.building_type != 'other') residential_median_level
 from quater_buffer q
 left join russia.building_classify b
@@ -271,6 +275,9 @@ create index on far_gba(id_gis);
 create index on far_gba(far_m2);
 create index on far_gba(gba_m2);
 create index on far_gba(residential_median_level);
+
+--drop table if exists street_classify.t2;
+--create table street_classify.t2 as select * from far_gba;
 
 
 -- Вычленяем точки ОДЗ для последующего расчёта суммарной площади (~ 2.5 мин)
@@ -306,6 +313,9 @@ group by p.id, p.id_gis;
 create index on odz_area(id);
 create index on odz_area(id_gis);
 create index on odz_area(odz_area_m2);
+
+--drop table if exists street_classify.t1;
+--create table street_classify.t1 as select * from odz_area;
 
 -- Свод статистики из предыдущих шагов
 drop table if exists stat;
@@ -393,7 +403,11 @@ left join pop_density pd using(id)
 where q.id_gis in(
 	44,256,288,290,797,812,871,926,927,932,943,952,955,
 	960,991,992,1010,1031,1034,1040,1047,1050,1061,
-	1065,1071,1075,1080,1082,1096,1099,1101,1104
+	1065,1071,1075,1080,1082,1096,1099,1101,1104,
+	985,901,1021,1050,1067,991,1064,1034,1016,982,
+	1078,1054,1062,1031,1065,1030,1046,1037,998,989,
+	1083,1075,1066,1052,1048,1024,1012,1007,1000,1039,
+	1044,999,990,1055,1023,1070,1069,1018,597,994,1019
 );
 	
 
@@ -790,7 +804,8 @@ select
 		public_transport_access_delta + ipa_delta + --ita_delta +
 		social_access_delta + entertainment_access_delta +
 		service_access_delta + greenery_access_delta + 
-		hazardous_dwelling_delta + negative_factors_delta + odz_area_percent_delta + 15
+		hazardous_dwelling_delta + negative_factors_delta +
+		(case when odz_area_percent_delta > 0 then -1 else 0 end) + 15
 	)::smallint sum_delta, -- суммарная итоговая дельта (от 0 до 15. Больше - лучше)
 	geom
 from stat2
