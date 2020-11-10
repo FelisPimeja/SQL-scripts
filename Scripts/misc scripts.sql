@@ -530,6 +530,56 @@ group by p.cad_region, p.cad_district, p.cad_quater
 order by p.cad_region, p.cad_district, p.cad_quater;
 
 
+/* Список муниципальных образований с иерархией вхождения по веломаршруту Москва - Санкт-Петербург */
+with r0 as (
+	select
+		b.*
+	from (select st_union(geom) geom from tmp.tmp_mos_spb_veloroute2) r
+	left join osm.admin_ru b
+		on st_intersects(r.geom, b.geom)
+			and b.admin_level = 4
+),
+r1 as (
+	select
+		b.*
+	from (select st_union(geom) geom from tmp.tmp_mos_spb_veloroute2) r
+	left join osm.admin_ru b
+		on st_intersects(r.geom, b.geom)
+			and b.admin_level in (5, 6)
+),
+r2 as (
+	select
+		b.*
+	from (select st_union(geom) geom from tmp.tmp_mos_spb_veloroute2) r
+	left join osm.admin_ru b
+		on st_intersects(r.geom, b.geom)
+			and b.admin_level = 8
+),
+r_a as (
+	select
+		r0.name subject,
+		r1.name raion,
+		r1.geom
+	from r0
+	left join r1
+		on st_area(st_intersection(r0.geom, r1.geom)::geography) >= st_area(r1.geom::geography) * 0.9
+),
+r_b as (
+	select
+		r_a.subject,
+		r_a.raion,
+		r2.name mo
+	from r_a
+	left join r2
+		on st_area(st_intersection(r_a.geom, r2.geom)::geography) >= st_area(r2.geom::geography) * 0.9
+)
+select
+	subject "Субъект РФ",
+	raion "Муниц. район/Городской округ",
+	mo "Муниц. образов./Городской район"
+from r_b
+order by subject, raion, mo;
+
 
 
 
