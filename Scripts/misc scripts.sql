@@ -300,7 +300,7 @@ order by c.id_gis;
 
 
 /* Подсчёт разной статистики по регионам для оценки туристической привлекательности */
-
+/* Время расчёта < 30 сек. */
 with urban_area as (
 	select 
 		r.name,
@@ -314,7 +314,9 @@ okn_count as (
 	select 
 		c.region_name "name",
 		count(o.*) total_okn
-	from (select distinct region_name from russia.city) c
+	from (
+		select distinct region_name from russia.city
+	) c
 	left join russia.raw_okn o
 		on (
 			o."Регион" = c.region_name
@@ -351,6 +353,7 @@ okn_count as (
 						and c.region_name = 'Чувашская Республика'
 				)
 		)
+			and o."Id_4" not like '%Памятник археологии%'
 	group by c.region_name
 	order by total_okn desc
 ),
@@ -398,7 +401,7 @@ climate as (
 		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'Dwd')))::geography)::numeric), 0) area_Dwd_m2,
 		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'EF')))::geography)::numeric), 0) area_EF_m2,
 		coalesce(round(st_area((st_intersection(r.geom, st_union(k.geom) filter(where k."class" = 'ET')))::geography)::numeric), 0) area_ET_m2
-	from russia.osm_admin_boundary_region r
+	from russia.region_boundary_land r
 	left join world.koppen_geiger_climate_classify k
 		on st_intersects(r.geom, k.geom)
 			and k.time_interval = '1976-2000'
@@ -452,7 +455,7 @@ station as (
 select distinct on(r.name)
 	(row_number() over())::int id,
 	r.name "Субъект РФ",
-	st_area(r.geom::geography) "Площадь, м2",
+	round(st_area(r.geom::geography)::numeric) "Площадь, м2",
 	coalesce(u.urban_area_m2, 0)  "Площ. урбан. терр., м2",
 	coalesce(o.total_okn, 0)  "Всего ОКН, шт.",
 	coalesce(h.historic_area_m2, 0)  "Площ. истор.-смеш. застр., м2",
