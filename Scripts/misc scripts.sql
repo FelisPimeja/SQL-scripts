@@ -511,7 +511,27 @@ left join (select distinct on(company_id) id_gis, rubrics, subrubrics, name from
 		)
 where b.id_gis in (777,778)
 group by b.id_gis, b.city, b.region_name, p.rubrics, p.name
-order by id_gis, count(*) desc
+order by id_gis, count(*) desc;
+
+
+
+
+/* Список кадастровых кварталов по веломаршруту Москва - Санкт-Петербург */
+drop table if exists buffer;
+create temp table buffer as select 	st_buffer(geom::geography, 50)::geometry(polygon, 4326) geom from tmp.tmp_mos_spb_veloroute2;
+create index on buffer using gist(geom);
+
+select
+	p.cad_region || ':' || p.cad_district || ':' || p.cad_quater "№ кадастрового квартала"
+from buffer r
+left join cadastr2016.parcel p
+	on st_intersects(r.geom, p.geom)
+group by p.cad_region, p.cad_district, p.cad_quater
+order by p.cad_region, p.cad_district, p.cad_quater;
+
+
+
+
 
 
 
