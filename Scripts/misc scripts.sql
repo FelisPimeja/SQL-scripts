@@ -493,6 +493,26 @@ order by r.name;
 
 
 
+/* Списки всех организаций для городов России (магазины, кафе, рестораны) */
+select 
+	b.id_gis,
+	b.city "Город",
+	b.region_name "Субъект РФ",
+	p.rubrics "Категория",
+	p.name "Название",
+	count(*) "Число"
+from russia.city b
+left join (select distinct on(company_id) id_gis, rubrics, subrubrics, name from index2019.data_poi) p -- с фильтрацией по company_id, чтобы избежать дублирования
+	on p.id_gis = b.id_gis 
+		and (
+			p.rubrics in ('Кафе','Ресторан', 'Быстрое питание')
+				or p.rubrics like '%агазин%'
+				or p.subrubrics = 'Продукты питания'
+		)
+where b.id_gis in (777,778)
+group by b.id_gis, b.city, b.region_name, p.rubrics, p.name
+order by id_gis, count(*) desc
+
 
 
 
