@@ -365,9 +365,11 @@ alter table russia.building_classify drop column id;
 alter table russia.building_classify add column id serial primary key;
 create index on russia.building_classify using gist(geom);
 create index on russia.building_classify using gist((geom::geography));
-create index on russia.building_classify (levels);
-create index on russia.building_classify (built_year);
-create index on russia.building_classify (building_type);
+create index on russia.building_classify(levels);
+create index on russia.building_classify(built_year);
+create index on russia.building_classify(building_type);
+create index on russia.building_classify(area_m2);
+create index on russia.building_classify(id_gis);
 
 /* комментарии */
 comment on table russia.building_classify is 'Типология зданий (жилые/нежилые) + этажность и год постройки. Источники: OpenStreetMap, Альтермаг, dom.gosuslugi.ru и dom.mingkh.ru';
