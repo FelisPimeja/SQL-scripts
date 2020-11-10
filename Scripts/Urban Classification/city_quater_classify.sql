@@ -477,7 +477,7 @@ select
 	coalesce(count(b.*) filter(where b.building_type = 'igs'), 0)::smallint building_igs_count,
 	coalesce(count(b.*) filter(where b.building_type = 'other'), 0)::smallint building_other_count,
 
-	count(b.*) filter(where b.built_year <= 1917 or o.id is not null) old_building_count,
+	(count(b.*) filter(where b.built_year <= 1917 or o.id is not null))::int2 old_building_count,
 	
 	percentile_disc(0.5) within group(order by b.area_m2) building_median_area_m2,
 
@@ -560,4 +560,27 @@ where building_count > 1 -- отбрасываем кварталы с одни�
 
 
 
+--Перепилить и добавить
+--create index on russia.city_quater_type(id);
+--create index on russia.city_quater_type(id_gis);
+--create index on russia.city_quater_type(area_ha);
+--create index on russia.city_quater_type(residential_function);
+--create index on russia.city_quater_type(footprint_ha);
+--create index on russia.city_quater_type(footprint_mkd_ha);
+--create index on russia.city_quater_type(footprint_igs_ha);
+--create index on russia.city_quater_type(footprint_other_ha);
+--create index on russia.city_quater_type(footprint_mkd_1_3_ha);
+--create index on russia.city_quater_type(footprint_mkd_4_9_ha);
+--create index on russia.city_quater_type(footprint_mkd_10_ha);
+--create index on russia.city_quater_type(building_count);
+--create index on russia.city_quater_type(building_mkd_count);
+--create index on russia.city_quater_type(building_igs_count);
+--create index on russia.city_quater_type(building_other_count);
+--create index on russia.city_quater_type(old_building_count);
+--create index on russia.city_quater_type(mkd_median_level);
+--create index on russia.city_quater_type(other_median_level);
+--create index on russia.city_quater_type(median_built_year);
+--create index on russia.city_quater_type(mode_built_year);
+--create index on russia.city_quater_type(quater_class);
+--create index on russia.city_quater_type using gist(geom);
 
