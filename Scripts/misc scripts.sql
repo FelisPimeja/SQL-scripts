@@ -586,6 +586,23 @@ order by subject, raion, mo;
 
 
 
+/* Площадь территории исторической застройки */
+select
+	c.id_gis,
+	c.city "Город",
+	c.region_name "Субъект РФ",
+	coalesce(sum(q.area_ha), 0) "Площадь истр. смеш. среды, га"
+from russia.city c
+left join russia.city_quater_type q 
+	on c.id_gis = q.id_gis 
+		and q.quater_class = 'Историческая смешанная городская среда'
+group by c.id_gis, c.city, c.region_name
+order by "Площадь истр. смеш. среды, га" desc;
+
+
+
+
+
 
 
 
