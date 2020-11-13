@@ -132,3 +132,28 @@ comment on column index2019.comp_i34.streets_sum_75_perc_photos_2019 is 'Чис�
 comment on column index2019.comp_i34.popular_streets_ratio_2018 is 'Количество центров притяжения для населения - отношение улиц на которых сделано ~ 75% всех фото к общему числу фото, сделанных в городе в 2018 г.';
 comment on column index2019.comp_i34.popular_streets_ratio_2019 is 'Количество центров притяжения для населения - отношение улиц на которых сделано ~ 75% всех фото к общему числу фото, сделанных в городе в 2019 г.';
 comment on column index2019.comp_i34.higher_value is 'В каком году показатель "Количество центров притяжения для населения" выше';
+
+
+
+
+
+/* Визуалка - наиболее популярные улицы */   -- Вкорячить потом нормально!!!
+/*create table tmp.tmp_viz_i34_st as 
+with stat as (
+	select
+		v.id_gis,
+		v.id_street,
+		count(v.id) street_photos,
+		sum(count(v.id)) over (partition by id_gis order by count(v.id) desc, id_street) cumulative_sum_photos,
+		sum(count(v.id)) over (partition by id_gis) as total_photos
+	from tmp.tmp_viz_i34_vk v
+	--where v.dist_m <= 100
+	group by v.id_gis, v.id_street
+)
+select st.*, s.street_photos
+from index2019.data_street st
+join stat s 
+	on s.id_street = st.id_street 
+		and s.cumulative_sum_photos <= s.total_photos * 0.75;
+
+create index on tmp.tmp_viz_i34_st using gist(geom);*/
