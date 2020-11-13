@@ -636,7 +636,32 @@ order by "Площадь истр. смеш. среды, га" desc;
 
 
 
-
+/* Минимальные - Максимальные плотности населения для городов */
+with density as (
+	select 
+		g.id,
+		g.id_gis,
+		z.pop
+	from index2019.stat_zoning z
+	left join index2019.data_hexgrid g 
+		on g.id =z.id
+	where z.id_gis IN (
+		985,901,1021,1050,1067,991,1064,1034,1016,
+		982,1078,1054,1062,1031,1065,1030,1046,1037,
+		998,989,1083,1075,1066,1052,1048,1024,1012,
+		1007,1000,1039,1044,999,990,1055,1023,1070,
+		1069,1018,597,994,1019
+	)
+		and z.pop > 0
+)
+select 
+	id_gis,
+	min(pop) min_pop_density,
+	max(pop) max_pop_density,
+	avg(pop) avg_pop_density
+from density 
+group by id_gis
+order by id_gis;
 
 
 
