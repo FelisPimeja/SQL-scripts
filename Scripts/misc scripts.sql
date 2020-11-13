@@ -151,17 +151,17 @@ select
 	coalesce(sum(q.area_ha) filter(where quater_class = 'Многоэтажная микрорайонная городская среда'), 0) "Cумм. площ. кварт. Многоэтажн. многокв., га",
 	coalesce(sum(q.area_ha) filter(where quater_class = 'Нежилая городская среда'), 0) "Cумм. площ. кварт. Нежилых, га",
 	coalesce(sum(q.area_ha) filter(where quater_class is null), 0) "Cумм. площ. кварт. Не классифиц., га",
-	coalesce(round(sum(q.area_ha) filter(where quater_class = 'Индивидуальная жилая городская среда') * 100 / sum(q.area_ha)::numeric, 2), 0) "% кварт. ИЖС",
-	coalesce(round(sum(q.area_ha) filter(where quater_class = 'Историческая смешанная городская среда') * 100 / sum(q.area_ha)::numeric, 2), 0) "% кварт. Истор. смеш.",
-	coalesce(round(sum(q.area_ha) filter(where quater_class = 'Cоветская периметральная городская среда') * 100 / sum(q.area_ha)::numeric, 2), 0) "% кварт. Советск. периметр.",
-	coalesce(round(sum(q.area_ha) filter(where quater_class in ('Советская малоэтажная разреженная городская среда', 'Современная малоэтажная разреженная городская среда', 'Позднесоветская малоэтажная разреженная городская среда') ) * 100 / sum(q.area_ha)::numeric, 2), 0) "% кварт. Малоэтажн. многокв.",
-	coalesce(round(sum(q.area_ha) filter(where quater_class = 'Среднеэтажная микрорайонная городская среда') * 100 / sum(q.area_ha)::numeric, 2), 0) "% кварт. Среднеэтажн. многокв.",
-	coalesce(round(sum(q.area_ha) filter(where quater_class = 'Многоэтажная микрорайонная городская среда') * 100 / sum(q.area_ha)::numeric, 2), 0) "% кварт. Многоэтажн. многокв.",
-	coalesce(round(sum(q.area_ha) filter(where quater_class = 'Нежилая городская среда') * 100 / sum(q.area_ha)::numeric, 2), 0) "% кварт. Нежилых",
-	coalesce(round(sum(q.area_ha) filter(where quater_class is null) * 100 / sum(q.area_ha)::numeric, 2), 0) "% кварт. Не классифиц."
+	coalesce(round((sum(q.area_ha) filter(where quater_class = 'Индивидуальная жилая городская среда') * 100 / sum(q.area_ha))::numeric, 2), 0) "% кварт. ИЖС",
+	coalesce(round((sum(q.area_ha) filter(where quater_class = 'Историческая смешанная городская среда') * 100 / sum(q.area_ha))::numeric, 2), 0) "% кварт. Истор. смеш.",
+	coalesce(round((sum(q.area_ha) filter(where quater_class = 'Cоветская периметральная городская среда') * 100 / sum(q.area_ha))::numeric, 2), 0) "% кварт. Советск. периметр.",
+	coalesce(round((sum(q.area_ha) filter(where quater_class in ('Советская малоэтажная разреженная городская среда', 'Современная малоэтажная разреженная городская среда', 'Позднесоветская малоэтажная разреженная городская среда') ) * 100 / sum(q.area_ha))::numeric, 2), 0) "% кварт. Малоэтажн. многокв.",
+	coalesce(round((sum(q.area_ha) filter(where quater_class = 'Среднеэтажная микрорайонная городская среда') * 100 / sum(q.area_ha))::numeric, 2), 0) "% кварт. Среднеэтажн. многокв.",
+	coalesce(round((sum(q.area_ha) filter(where quater_class = 'Многоэтажная микрорайонная городская среда') * 100 / sum(q.area_ha))::numeric, 2), 0) "% кварт. Многоэтажн. многокв.",
+	coalesce(round((sum(q.area_ha) filter(where quater_class = 'Нежилая городская среда') * 100 / sum(q.area_ha))::numeric, 2), 0) "% кварт. Нежилых",
+	coalesce(round((sum(q.area_ha) filter(where quater_class is null) * 100 / sum(q.area_ha))::numeric, 2), 0) "% кварт. Не классифиц."
 from russia.city b
-left join russia.city_quater_type q using(id_gis)
-group by b.id_gis, b.city, b.region_name	
+join tmp.tmp_quater_30 q using(id_gis)
+group by b.id_gis, b.city, b.region_name
 	
 	
 
