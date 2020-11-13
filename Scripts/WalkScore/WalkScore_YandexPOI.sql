@@ -5,12 +5,12 @@ create temp table city as
 select id_gis from russia.city
 where id_gis <= 2000  --дебаг
 ;
-create index on poi(id_gis);
+create index on city(id_gis);
 
 /* Подготовка POI Яндекса для расчёта WalkScore */
 drop table if exists poi;
 create temp table poi as
-select distinct on (p.company_id)
+select --distinct on (p.company_id) -- По идее дубликаты рубрик мёрджить не нужно!!!
 --	(row_number() over())::int id,
 	p.geom,
 	p.name, 
