@@ -1,9 +1,10 @@
 /* Расчёт WalkScore на данных Яндекса и доп слое "благокстроенного озеленения" из состава индекса 2019 */
+/* Время расчёта 211 часов на данных 2019 г. */
 /* Фильтрация по id_gis */
 drop table if exists city;
 create temp table city as
 select id_gis from russia.city
-where id_gis <= 2000  --дебаг
+--where id_gis <= 2000  --дебаг
 ;
 create index on city(id_gis);
 
