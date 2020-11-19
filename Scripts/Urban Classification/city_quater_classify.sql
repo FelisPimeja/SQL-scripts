@@ -172,7 +172,13 @@ group by id_gis;
 /* вырезаем ысё вышесобранное из буфера от зданий */
 drop table if exists boundary_clip;
 create temp table boundary_clip as 
-select b.id_gis, st_difference(st_collectionextract(st_makevalid(b.geom), 3), st_collectionextract(st_makevalid(l.geom), 3)) geom
+select
+	b.id_gis,
+	case 
+		when l.geom is not null -- Проверяем, что вторая геометрия не отсутствует и действительно есть, что вырезать. В противном случае на выходе будет Null
+			then st_difference(st_collectionextract(st_makevalid(b.geom), 3), st_collectionextract(st_makevalid(l.geom), 3))
+		else b.geom
+	end geom
 from building_buffers b
 left join area_union l using(id_gis);
 
