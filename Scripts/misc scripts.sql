@@ -668,7 +668,202 @@ order by id_gis;
 
 
 
+/* Статистика по населению и удалённости от ОКН для населённых пунктов следующих Субъектов: */
+/* Тульская область, Ярославская область, Калужская область, Ивановская область, Костромская область,
+	Московская область, Рязанская область, Владимирская область, Тверская область */
 
+/* Собираем матрёшку административных границ */
+/* Извлекаем Субъекты */
+drop table if exists regions;
+create temp table regions as
+select * from osm.admin_ru
+where admin_level = 4
+	and name in (
+	    'Тульская область',
+	    'Ярославская область',
+	    'Калужская область',
+	    'Ивановская область',
+	    'Костромская область',
+	    'Московская область',
+	    'Рязанская область',
+	    'Владимирская область',
+	    'Тверская область'
+	);
+create index on regions(name);
+create index on regions using gist(geom);
+
+/* Ищем как населённые пункты вложены по регионам */
+drop table if exists  place_osm_1;
+create temp table place_osm_1 as 
+select
+	p.*,
+	r.name region
+from regions r
+left join osm.places_ru p
+	on st_intersects(r.geom, p.geom)
+		and p.type in ('city', 'hamlet', 'isolated_dwelling', 'town', 'village');
+create index on place_osm_1 using gist(geom);
+
+--select count(*) from place_osm_1
+
+/* Ищем как населённые пункты вложены по районам */
+drop table if exists place_osm_2;
+create temp table place_osm_2 as (
+	select p.*, r.name raion
+	from place_osm_1 p
+	left join osm.admin_ru r
+		on st_intersects(r.geom, p.geom)
+			and r.admin_level = 6
+);
+create index on place_osm_2 using gist(geom);
+
+--select count(*) from place_osm_2
+--select * from place_osm1 limit 10
+
+/* Ищем как населённые пункты вложены по поселениям */
+drop table if exists place_osm;
+create temp table place_osm as (
+	select distinct on(p.id)
+		p.id,
+		p.name,
+		p.type,
+		p.population,
+		p.geom,
+		r.name poselenie,
+		p.raion,
+		p.region
+	from place_osm_2 p
+	left join osm.admin_ru r
+		on st_intersects(r.geom, p.geom)
+			and r.admin_level = 8
+);
+create index on place_osm(name);
+create index on place_osm using gist(geom);
+create index on place_osm using gist((geom::geography));
+
+--select count(*) from place_osm
+
+/* Ищем какие населённые пункты из третьего источника попадают в заданные регионы */
+drop table if exists  place_stat;
+create temp table place_stat as (
+	select p.type, p.name, p.peoples population, p.geom
+	from regions r
+	join russia.place_all p
+		on st_intersects(r.geom, p.geom)
+			and p.level = 3
+);
+create index on place_stat(population);
+create index on place_stat(name);
+create index on place_stat(type);
+create index on place_stat using gist(geom);
+create index on place_stat using gist((geom::geography));
+
+drop table if exists  okn;
+create temp table okn as (
+	select
+		p.general_id,
+		p.nativename "name",
+		p.general__categorytype_value "type",
+		p.geom
+	from regions r
+	join index2019.data_okn p
+	 on st_intersects(r.geom, p.geom)
+);
+create index on okn(name);
+create index on okn using gist(geom);
+create index on okn using gist((geom::geography));
+
+--select "type", count(*) from okn group by "type"
+--select count(*) from okn
+
+/* Сопоставляем точки населённых пунктов из OpenStreetMap и третьего источника */
+drop table if exists  place;
+create temp table place as
+select
+	p1.id,
+	coalesce(p2.type, '') type_stat,
+	p1.name,
+--		p2.name name_stat,
+	p1.type type_osm,
+	case 
+		when p2.population is null
+			then p1.population
+		else p2.population
+	end population,
+	case 
+		when p2.population is not null
+			then 'Росстат 2010'::text
+		when p1.population is not null 
+			then 'OpenStreetMap'::text
+	end population_source,
+	p1.geom,
+	p1.poselenie,
+	p1.raion,
+	p1.region
+from place_osm p1
+left join lateral (
+	select p2.*
+	from place_stat p2
+	where st_dwithin(p1.geom::geography, p2.geom::geography, 10000)
+		and p1.name ilike p2.name
+	order by p1.geom::geography <-> p2.geom::geography
+	limit 1
+) p2 on true;
+
+--select * from place where population > 0
+create index on place using gist(geom);
+create index on place using gist((geom::geography));
+
+--select count(*) from place
+
+/* Проверяем расстояние от населённых пунктов до всех ОКН из реестра Минкульта в радиусе 100 км. */
+drop table if exists  place_final;
+create temp table place_final as 
+select
+	p.*,
+	array_to_string(array_agg(o.name || ' (' || case when o.dist_km = 0 then '< 1'::text else o.dist_km::text end || ' км.)' order by dist_km), ', 
+') okn_in_100km_radius
+from place p
+left join lateral (
+	select
+		o.name,
+		o.general_id,
+		o.type,
+		round((st_distance(p.geom::geography, o.geom::geography) / 1000)::numeric) dist_km
+	from okn o
+	where st_dwithin(p.geom::geography, o.geom::geography, 100000)
+	order by p.geom::geography <-> o.geom::geography
+	limit 10
+) o on true
+group by
+	p.id,
+	p.type_stat,
+	p.name,
+	p.type_osm,
+	p.population,
+	p.population_source,
+	p.geom,
+	p.poselenie,
+	p.raion,
+	p.region
+;
+
+select
+--	(row_number() over())::int id,
+	type_stat "Тип н.п.",
+	name "Название",
+--	type_osm,
+	population "Население, чел.",
+	population_source "Насел., источник",
+--	geom,
+--	admin_id,
+	poselenie "Поселение",
+	raion "Район/Округ",
+	region "Субъект РФ",
+	okn_in_100km_radius "ОКН в 100 км. радиусе"
+from place_final
+where name is not null
+order by region, raion, poselenie, population desc nulls last;
 
 
 
