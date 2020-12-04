@@ -572,7 +572,7 @@ order by p.cad_region, p.cad_district, p.cad_quater;
 with r0 as (
 	select
 		b.*
-	from (select st_union(geom) geom from tmp.tmp_mos_spb_veloroute2) r
+	from (select st_union(geom) geom from tmp.tmp_route) r
 	left join osm.admin_ru b
 		on st_intersects(r.geom, b.geom)
 			and b.admin_level = 4
@@ -580,7 +580,7 @@ with r0 as (
 r1 as (
 	select
 		b.*
-	from (select st_union(geom) geom from tmp.tmp_mos_spb_veloroute2) r
+	from (select st_union(geom) geom from tmp.tmp_route) r
 	left join osm.admin_ru b
 		on st_intersects(r.geom, b.geom)
 			and b.admin_level in (5, 6)
@@ -588,7 +588,7 @@ r1 as (
 r2 as (
 	select
 		b.*
-	from (select st_union(geom) geom from tmp.tmp_mos_spb_veloroute2) r
+	from (select st_union(geom) geom from tmp.tmp_route) r
 	left join osm.admin_ru b
 		on st_intersects(r.geom, b.geom)
 			and b.admin_level = 8
