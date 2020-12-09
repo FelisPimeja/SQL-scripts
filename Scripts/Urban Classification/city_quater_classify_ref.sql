@@ -1,5 +1,5 @@
 /* Целевые параметры среды */
-/* Время расчёта: ~ 5 мин на 30 городов */
+/* Время расчёта: ~ 4 ч на все города */
 
 -- Буферы 800 м. от кварталов (~ 15 сек.)
 drop table if exists quater_buffer;
@@ -10,17 +10,19 @@ select
 	geom src_geom, -- исходную геометрию оставляем
 	st_multi(st_buffer(geom::geography, 800)::geometry)::geometry(multipolygon, 4326) geom -- буфер 800м (~ пешая досягаемость. Правильнее строить изохроны, но пока считаем так!!!)
 --from street_classify.q_1080_v8 q --bak
-from russia.city_quater_type q
+from russia.city_quater_type_re q
 --where q.id_gis = 1080; --дебаг
-where q.id_gis in(
-	44,256,288,290,797,812,871,926,927,932,943,952,955,
-	960,991,992,1010,1031,1034,1040,1047,1050,1061,
-	1065,1071,1075,1080,1082,1096,1099,1101,1104,
-	985,901,1021,1050,1067,991,1064,1034,1016,982,
-	1078,1054,1062,1031,1065,1030,1046,1037,998,989,
-	1083,1075,1066,1052,1048,1024,1012,1007,1000,1039,
-	1044,999,990,1055,1023,1070,1069,1018,597,994,1019
-); --целевые id_gis для 32 городов для проекта Стандарта Мастер плана
+--where q.id_gis in(
+--	44,256,288,290,797,812,871,926,927,932,943,952,955,
+--	960,991,992,1010,1031,1034,1040,1047,1050,1061,
+--	1065,1071,1075,1080,1082,1096,1099,1101,1104,
+--	985,901,1021,1050,1067,991,1064,1034,1016,982,
+--	1078,1054,1062,1031,1065,1030,1046,1037,998,989,
+--	1083,1075,1066,1052,1048,1024,1012,1007,1000,1039,
+--	1044,999,990,1055,1023,1070,1069,1018,597,994,1019,
+--	520,356,902,928,986,1023,1070,1005,1112,643,75,188,1010,259,923
+--)
+; --целевые id_gis для 32 городов для проекта Стандарта Мастер плана
 
 create index on quater_buffer(id);
 create index on quater_buffer(id_gis);
@@ -389,7 +391,7 @@ create temp table stat as
     round(coalesce(o.odz_area_m2 * 100 / nullif(f.gba_m2, 0), 0)::numeric, 2) odz_area_percent,
 
     geom
-from russia.city_quater_type q
+from russia.city_quater_type_re q
 left join hazardous_dwelling h using(id)
 left join negative_factors n using(id)
 left join greenery g using(id)
@@ -400,15 +402,17 @@ left join poi p using(id)
 left join far_gba f using(id)
 left join odz_area o using(id)
 left join pop_density pd using(id)
-where q.id_gis in(
-	44,256,288,290,797,812,871,926,927,932,943,952,955,
-	960,991,992,1010,1031,1034,1040,1047,1050,1061,
-	1065,1071,1075,1080,1082,1096,1099,1101,1104,
-	985,901,1021,1050,1067,991,1064,1034,1016,982,
-	1078,1054,1062,1031,1065,1030,1046,1037,998,989,
-	1083,1075,1066,1052,1048,1024,1012,1007,1000,1039,
-	1044,999,990,1055,1023,1070,1069,1018,597,994,1019
-);
+--where q.id_gis in(
+--	44,256,288,290,797,812,871,926,927,932,943,952,955,
+--	960,991,992,1010,1031,1034,1040,1047,1050,1061,
+--	1065,1071,1075,1080,1082,1096,1099,1101,1104,
+--	985,901,1021,1050,1067,991,1064,1034,1016,982,
+--	1078,1054,1062,1031,1065,1030,1046,1037,998,989,
+--	1083,1075,1066,1052,1048,1024,1012,1007,1000,1039,
+--	1044,999,990,1055,1023,1070,1069,1018,597,994,1019,
+--	520,356,902,928,986,1023,1070,1005,1112,643,75,188,1010,259,923
+--)
+;
 	
 
 -- Второй свод статистики (прописываем целевые показатели и считаем дельту)
@@ -670,8 +674,8 @@ order by id_gis, id;
 
 
 -- Итоговая статистика (не слить ли с предыдущим шагом?)
-drop table if exists street_classify.quater_stat_verify;
-create table street_classify.quater_stat_verify as
+drop table if exists russia.quater_stat_verify;
+create table russia.quater_stat_verify as
 select
 	id,
 	id_gis,
@@ -811,65 +815,65 @@ select
 from stat2
 ;
 
-alter table street_classify.quater_stat_verify add primary key(id);
-create index on street_classify.quater_stat_verify(id_gis);
-create index on street_classify.quater_stat_verify using gist(geom);
+alter table russia.quater_stat_verify add primary key(id);
+create index on russia.quater_stat_verify(id_gis);
+create index on russia.quater_stat_verify using gist(geom);
 
-comment on table street_classify.quater_stat_verify is 'Целевые параметры сред для id_gis = 1080. Сравнение поквартальных показателей с эталонными
+comment on table russia.quater_stat_verify is 'Целевые параметры сред для id_gis = 1080. Сравнение поквартальных показателей с эталонными
 Методика: https://docs.google.com/spreadsheets/d/14Xn4kg7C4M7fj0S57rGpMqY5Ou690lFY-lU3O4A2F1w/edit#gid=871860173';
-comment on column street_classify.quater_stat_verify.id is 'Первичный ключ - уникальный id квартала';
-comment on column street_classify.quater_stat_verify.id_gis is 'id_gis города';
-comment on column street_classify.quater_stat_verify.quater_class is 'Тип городской в квартале';
-comment on column street_classify.quater_stat_verify.area_ha is 'Площадь, га';
-comment on column street_classify.quater_stat_verify.area_ha_reference is 'Площадь целевая, га';
-comment on column street_classify.quater_stat_verify.area_ha_delta is 'Дельта площади (превышение относительно эталонной)';
-comment on column street_classify.quater_stat_verify.pop_density is 'Плотность населения, чел./га';
-comment on column street_classify.quater_stat_verify.pop_density_reference is 'Плотность населения целевая, чел./га';
-comment on column street_classify.quater_stat_verify.pop_density_delta is 'Дельта плотности населения (превышение относительно эталонной)';
-comment on column street_classify.quater_stat_verify.built_density is 'Плотность застройки';
-comment on column street_classify.quater_stat_verify.built_density_reference is 'Плотность застройки целевая';
-comment on column street_classify.quater_stat_verify.built_density_delta is 'Дельта плотности застройки';
-comment on column street_classify.quater_stat_verify.residential_median_level is 'Средняя этажность';
-comment on column street_classify.quater_stat_verify.residential_median_level_reference is 'Средняя этажность целевая';
-comment on column street_classify.quater_stat_verify.residential_median_level_delta is 'Дельта по средней этажности';
-comment on column street_classify.quater_stat_verify.public_transport_access is 'Доступность общественного транспорта';
-comment on column street_classify.quater_stat_verify.public_transport_access_reference is 'Доступность общественного транспорта целевая';
-comment on column street_classify.quater_stat_verify.public_transport_access_delta is 'Дельта доступности общественного транспорта';
-comment on column street_classify.quater_stat_verify.ipa is 'Уровень пешеходной связности прилегающей территории';
-comment on column street_classify.quater_stat_verify.ipa_reference is 'Уровень пешеходной связности прилегающей территории целевлй';
-comment on column street_classify.quater_stat_verify.ipa_delta is 'Дельта уровня пешеходной связности прилегающей территории';
---comment on column street_classify.quater_stat_verify.ita is 'Уровень транспортной связности прилегающей территории';
---comment on column street_classify.quater_stat_verify.ita_reference is 'Уровень транспортной связности прилегающей территории целевой';
---comment on column street_classify.quater_stat_verify.ita_delta is 'Дельта уровня транспортной связности прилегающей территории';
-comment on column street_classify.quater_stat_verify.social_access is 'Обеспеченность социальными объектами в пешей доступности';
-comment on column street_classify.quater_stat_verify.social_access_reference is 'Обеспеченность социальными объектами в пешей доступности целевая';
-comment on column street_classify.quater_stat_verify.social_access_delta is 'Дельта обеспеченности социальными объектами в пешей доступности';
-comment on column street_classify.quater_stat_verify.entertainment_access is 'Обеспеченность досуговыми объектами в пешей доступности';
-comment on column street_classify.quater_stat_verify.entertainment_access_reference is 'Обеспеченность досуговыми объектами в пешей доступности целевая';
-comment on column street_classify.quater_stat_verify.entertainment_access_delta is 'Дельта обеспеченности досуговыми объектами в пешей доступности';
-comment on column street_classify.quater_stat_verify.service_access is 'Обеспеченность сервисной инфраструктурой в пешей доступности';
-comment on column street_classify.quater_stat_verify.service_access_reference is 'Обеспеченность сервисной инфраструктурой в пешей доступности целевая';
-comment on column street_classify.quater_stat_verify.service_access_delta is 'Дельта обеспеченности сервисной инфраструктурой в пешей доступности';
-comment on column street_classify.quater_stat_verify.greenery_access is 'Обеспеченность озеленёнными территориями в пешей доступности';
-comment on column street_classify.quater_stat_verify.greenery_access_reference is 'Обеспеченность озеленёнными территориями в пешей доступности целевая';
-comment on column street_classify.quater_stat_verify.greenery_access_delta is 'Дельта обеспеченности озеленёнными территориями в пешей доступности';
-comment on column street_classify.quater_stat_verify.odz_area_percent is 'Процент помещений объектов общественно-деловой инфраструктуры от общей площади площади застройки территории';
-comment on column street_classify.quater_stat_verify.odz_area_percent_reference is 'Процент помещений объектов общественно-деловой инфраструктуры от общей площади площади застройки территории целевой';
-comment on column street_classify.quater_stat_verify.odz_area_percent_delta is 'Дельта процента помещений объектов общественно-деловой инфраструктуры от общей площади площади застройки территории';
-comment on column street_classify.quater_stat_verify.hazardous_dwelling is 'Наличие аварийного жилья в квартале';
-comment on column street_classify.quater_stat_verify.hazardous_dwelling_reference is 'Наличие аварийного жилья в квартале целевое';
-comment on column street_classify.quater_stat_verify.hazardous_dwelling_delta is 'Дельта от наличия аварийного жилья в квартале';
-comment on column street_classify.quater_stat_verify.negative_factors is 'Присутствие негативных антропогенных факторов в пешей доступности';
-comment on column street_classify.quater_stat_verify.negative_factors_reference is 'Присутствие негативных антропогенных факторов в пешей доступности целевое';
-comment on column street_classify.quater_stat_verify.negative_factors_delta is 'Дельта от присутствия негативных антропогенных факторов в пешей доступности';
-comment on column street_classify.quater_stat_verify.far is 'Плотность застройки по футпринту здания (FAR)';
-comment on column street_classify.quater_stat_verify.sum_delta is 'Суммарная дельта по всем показателям  (от 0 до 15. Больше - лучше)';
-comment on column street_classify.quater_stat_verify.geom is 'Геометрия';
+comment on column russia.quater_stat_verify.id is 'Первичный ключ - уникальный id квартала';
+comment on column russia.quater_stat_verify.id_gis is 'id_gis города';
+comment on column russia.quater_stat_verify.quater_class is 'Тип городской в квартале';
+comment on column russia.quater_stat_verify.area_ha is 'Площадь, га';
+comment on column russia.quater_stat_verify.area_ha_reference is 'Площадь целевая, га';
+comment on column russia.quater_stat_verify.area_ha_delta is 'Дельта площади (превышение относительно эталонной)';
+comment on column russia.quater_stat_verify.pop_density is 'Плотность населения, чел./га';
+comment on column russia.quater_stat_verify.pop_density_reference is 'Плотность населения целевая, чел./га';
+comment on column russia.quater_stat_verify.pop_density_delta is 'Дельта плотности населения (превышение относительно эталонной)';
+comment on column russia.quater_stat_verify.built_density is 'Плотность застройки';
+comment on column russia.quater_stat_verify.built_density_reference is 'Плотность застройки целевая';
+comment on column russia.quater_stat_verify.built_density_delta is 'Дельта плотности застройки';
+comment on column russia.quater_stat_verify.residential_median_level is 'Средняя этажность';
+comment on column russia.quater_stat_verify.residential_median_level_reference is 'Средняя этажность целевая';
+comment on column russia.quater_stat_verify.residential_median_level_delta is 'Дельта по средней этажности';
+comment on column russia.quater_stat_verify.public_transport_access is 'Доступность общественного транспорта';
+comment on column russia.quater_stat_verify.public_transport_access_reference is 'Доступность общественного транспорта целевая';
+comment on column russia.quater_stat_verify.public_transport_access_delta is 'Дельта доступности общественного транспорта';
+comment on column russia.quater_stat_verify.ipa is 'Уровень пешеходной связности прилегающей территории';
+comment on column russia.quater_stat_verify.ipa_reference is 'Уровень пешеходной связности прилегающей территории целевлй';
+comment on column russia.quater_stat_verify.ipa_delta is 'Дельта уровня пешеходной связности прилегающей территории';
+--comment on column russia.quater_stat_verify.ita is 'Уровень транспортной связности прилегающей территории';
+--comment on column russia.quater_stat_verify.ita_reference is 'Уровень транспортной связности прилегающей территории целевой';
+--comment on column russia.quater_stat_verify.ita_delta is 'Дельта уровня транспортной связности прилегающей территории';
+comment on column russia.quater_stat_verify.social_access is 'Обеспеченность социальными объектами в пешей доступности';
+comment on column russia.quater_stat_verify.social_access_reference is 'Обеспеченность социальными объектами в пешей доступности целевая';
+comment on column russia.quater_stat_verify.social_access_delta is 'Дельта обеспеченности социальными объектами в пешей доступности';
+comment on column russia.quater_stat_verify.entertainment_access is 'Обеспеченность досуговыми объектами в пешей доступности';
+comment on column russia.quater_stat_verify.entertainment_access_reference is 'Обеспеченность досуговыми объектами в пешей доступности целевая';
+comment on column russia.quater_stat_verify.entertainment_access_delta is 'Дельта обеспеченности досуговыми объектами в пешей доступности';
+comment on column russia.quater_stat_verify.service_access is 'Обеспеченность сервисной инфраструктурой в пешей доступности';
+comment on column russia.quater_stat_verify.service_access_reference is 'Обеспеченность сервисной инфраструктурой в пешей доступности целевая';
+comment on column russia.quater_stat_verify.service_access_delta is 'Дельта обеспеченности сервисной инфраструктурой в пешей доступности';
+comment on column russia.quater_stat_verify.greenery_access is 'Обеспеченность озеленёнными территориями в пешей доступности';
+comment on column russia.quater_stat_verify.greenery_access_reference is 'Обеспеченность озеленёнными территориями в пешей доступности целевая';
+comment on column russia.quater_stat_verify.greenery_access_delta is 'Дельта обеспеченности озеленёнными территориями в пешей доступности';
+comment on column russia.quater_stat_verify.odz_area_percent is 'Процент помещений объектов общественно-деловой инфраструктуры от общей площади площади застройки территории';
+comment on column russia.quater_stat_verify.odz_area_percent_reference is 'Процент помещений объектов общественно-деловой инфраструктуры от общей площади площади застройки территории целевой';
+comment on column russia.quater_stat_verify.odz_area_percent_delta is 'Дельта процента помещений объектов общественно-деловой инфраструктуры от общей площади площади застройки территории';
+comment on column russia.quater_stat_verify.hazardous_dwelling is 'Наличие аварийного жилья в квартале';
+comment on column russia.quater_stat_verify.hazardous_dwelling_reference is 'Наличие аварийного жилья в квартале целевое';
+comment on column russia.quater_stat_verify.hazardous_dwelling_delta is 'Дельта от наличия аварийного жилья в квартале';
+comment on column russia.quater_stat_verify.negative_factors is 'Присутствие негативных антропогенных факторов в пешей доступности';
+comment on column russia.quater_stat_verify.negative_factors_reference is 'Присутствие негативных антропогенных факторов в пешей доступности целевое';
+comment on column russia.quater_stat_verify.negative_factors_delta is 'Дельта от присутствия негативных антропогенных факторов в пешей доступности';
+comment on column russia.quater_stat_verify.far is 'Плотность застройки по футпринту здания (FAR)';
+comment on column russia.quater_stat_verify.sum_delta is 'Суммарная дельта по всем показателям  (от 0 до 15. Больше - лучше)';
+comment on column russia.quater_stat_verify.geom is 'Геометрия';
 
 
 --select * from russia.city where id_gis = 1080
 
-
+select count(distinct id_gis) from russia.quater_stat_verify
 
 
 --!!! Создание таблицы ipa !!!
@@ -933,5 +937,26 @@ comment on column street_classify.quater_stat_verify.geom is 'Геометрия
 --	negative_factors_delta "Негативн. антропоген. фактор. в пешей доступн.-дельта",
 --	far "FAR-суммарная площадь футпринта",
 --	sum_delta "Суммарная дельта по всем показателям (от -14 до 0, больше-лучше)"
---from street_classify.quater_stat_verify
+--from russia.quater_stat_verify
 
+
+
+--select id_gis, city || ', ' || region_name  from russia.city
+--where city in(
+--	'Владикавказ',
+--	'Саратов',
+--	'Северодвинск',
+--	'Киселёвск',
+--	'Нижнекамск',
+--	'Азов',
+--	'Артём',
+--	'Елизово',
+--	'Суздаль',
+--	'Лабытнанги',
+--	'Благодарный',
+--	'Пикалёво',
+--	'Таганрог'
+--)
+--order by id_gis
+
+--select count( distinct id_gis) from russia.quater_stat_verify
