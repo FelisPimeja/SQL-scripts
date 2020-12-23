@@ -1,3 +1,70 @@
+drop table if exists urban_buffer;
+create temp table urban_buffer as
+select id_gis, st_buffer(geom::geography, 800)::geometry geom
+from russia.city_built_area_light
+where id_gis = 1083
+;
+create index on urban_buffer using gist(geom);
+create index on urban_buffer(id_gis)
+;
+drop table if exists grid_urban;
+create temp table grid_urban as
+select distinct on(g.id)
+	g.id,
+	g.id_gis,
+	g.area_ha,
+	g.geom
+from urban_buffer u
+join index2019.data_hexgrid g
+	on u.id_gis = g.id_gis 
+		and st_intersects(g.geom, u.geom)
+where u.id_gis = 1083
+--	and st_isvalid(u.geom)
+group by 
+	g.id,
+	g.id_gis,
+	g.area_ha,
+	g.geom
+;
+create index on grid_urban using gist(geom);
+create index on grid_urban(id_gis)
+;
+drop table if exists grid_filtered_1;
+create temp table grid_filtered_1 as
+select distinct on(g.id) g.*
+from grid_urban g
+left join embankment.city_waterarea w
+	on g.id_gis = w.id_gis 
+		and st_intersects(g.geom, w.geom)
+where g.id_gis = 1083
+	and w.id is null
+group by 
+	g.id,
+	g.id_gis,
+	g.area_ha,
+	g.geom
+;
+create index on grid_filtered_1 using gist(geom);
+create index on grid_filtered_1(id_gis)
+;
+drop table if exists grid_filtered_2;
+create temp table grid_filtered_2 as
+select distinct on(g.id) g.*
+from grid_filtered_1 g
+left join index2019.data_greenery gr
+	on g.id_gis = gr.id_gis 
+		and st_intersects(g.geom, gr.geom)
+where g.id_gis = 1083
+	and gr.id is null
+group by 
+	g.id,
+	g.id_gis,
+	g.area_ha,
+	g.geom
+;
+create index on grid_filtered_2 using gist(geom);
+create index on grid_filtered_2(id_gis)
+;
 drop table if exists dens_grid;
 create temp table dens_grid as
 with density as (
@@ -7,7 +74,7 @@ with density as (
 		g.area_ha,
 		coalesce(round(((sum(st_area(st_intersection(g.geom, b.geom)::geography) * case when b.levels is null then 1 else b.levels end) / 1000 / nullif(g.area_ha, 0)) * 0.95)::numeric, 2), 0) build_density_1km2_ha,
 		g.geom
-	from index2019.data_hexgrid g
+	from grid_filtered_2 g
 	left join street_classify.building_classify_2_pass b
 		on b.id_gis = g.id_gis 
 			and st_intersects(g.geom, b.geom)
@@ -36,7 +103,7 @@ ipa_ita as (
 				else 1::smallint
 			end
 		) ipa
-	from index2019.data_hexgrid g
+	from grid_filtered_2 g
 	left join tmp.tmp_1083_ita_ipa i
 		on st_intersects(g.geom, i.geom)
 --			and i.id_gis = g.id_gis 			
@@ -91,8 +158,8 @@ create index on dens_grid using gist(geom);
 create index on dens_grid using gist((geom::geography));
 create index on dens_grid(build_density_1km2_ha);
 create index on dens_grid(sum_ipa_ita);
-drop table if exists tmp.tmp_1083_density_grid;
-create table tmp.tmp_1083_density_grid as
+drop table if exists tmp.tmp_1083_density_grid_2;
+create table tmp.tmp_1083_density_grid_2 as
 select
 	d1.*,
 	case 
@@ -123,15 +190,15 @@ group by
 	d1.ita,
 	d1.sum_ipa_ita
 ;
-create index on tmp.tmp_1083_density_grid using gist(geom);
-create index on tmp.tmp_1083_density_grid(build_density_1km2_ha);
-create index on tmp.tmp_1083_density_grid(build_density_class);
-create index on tmp.tmp_1083_density_grid(build_density_type);
-create index on tmp.tmp_1083_density_grid(build_density_score);
-create index on tmp.tmp_1083_density_grid(ipa);
-create index on tmp.tmp_1083_density_grid(ita);
-create index on tmp.tmp_1083_density_grid(sum_ipa_ita);
-create index on tmp.tmp_1083_density_grid(priority);
+create index on tmp.tmp_1083_density_grid_2 using gist(geom);
+create index on tmp.tmp_1083_density_grid_2(build_density_1km2_ha);
+create index on tmp.tmp_1083_density_grid_2(build_density_class);
+create index on tmp.tmp_1083_density_grid_2(build_density_type);
+create index on tmp.tmp_1083_density_grid_2(build_density_score);
+create index on tmp.tmp_1083_density_grid_2(ipa);
+create index on tmp.tmp_1083_density_grid_2(ita);
+create index on tmp.tmp_1083_density_grid_2(sum_ipa_ita);
+create index on tmp.tmp_1083_density_grid_2(priority);
 
 --create index on tmp.tmp_1083_ita_ipa using gist(geom);
 --alter table tmp.tmp_1083_ita_ipa
