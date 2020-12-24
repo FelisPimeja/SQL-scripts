@@ -1203,11 +1203,6 @@ end;
 */
 
 
- 
- 
- 
-
-
 
 -- Фильтр для выборки ООПТ из ЗОУИТ Росреестра
 select z.* 
@@ -1255,13 +1250,164 @@ where r.name = 'Владимирская область'
 
 
 
+/* Подсчёт статистики по гостиницам */
+/* Собираем матрёшку административных границ */
+/* Извлекаем Субъекты */
+drop table if exists regions;
+create temp table regions as
+select * from osm.admin_ru
+where admin_level = 4
+	and name in (
+	    'Тульская область',
+	    'Ярославская область',
+	    'Калужская область',
+	    'Ивановская область',
+	    'Костромская область',
+	    'Московская область',
+	    'Рязанская область',
+	    'Владимирская область',
+	    'Тверская область'
+	);
+create index on regions(name);
+create index on regions using gist(geom);
 
+/* Ищем как населённые пункты вложены по регионам */
+drop table if exists  place_osm_1;
+create temp table place_osm_1 as 
+select
+	p.*,
+	r.name region
+from regions r
+left join osm.places_ru p
+	on st_intersects(r.geom, p.geom)
+		and p.type in ('city', 'hamlet', 'isolated_dwelling', 'town', 'village');
+create index on place_osm_1 using gist(geom);
 
+--select count(*) from place_osm_1
 
+/* Ищем как населённые пункты вложены по районам */
+drop table if exists place_osm_2;
+create temp table place_osm_2 as (
+	select p.*, r.name raion
+	from place_osm_1 p
+	left join osm.admin_ru r
+		on st_intersects(r.geom, p.geom)
+			and r.admin_level = 6
+);
+create index on place_osm_2 using gist(geom);
 
+--select count(*) from place_osm_2
+--select * from place_osm1 limit 10
 
-*/
+/* Ищем как населённые пункты вложены по поселениям */
+drop table if exists place_osm;
+create temp table place_osm as (
+	select distinct on(p.id)
+		p.id,
+		p.name,
+		p.type,
+		p.population,
+		p.geom,
+		r.name poselenie,
+		p.raion,
+		p.region
+	from place_osm_2 p
+	left join osm.admin_ru r
+		on st_intersects(r.geom, p.geom)
+			and r.admin_level = 8
+);
+create index on place_osm(name);
+create index on place_osm using gist(geom);
+create index on place_osm using gist((geom::geography));
+
+--select count(*) from place_osm
+
+/* Ищем какие населённые пункты из третьего источника попадают в заданные регионы */
+drop table if exists  place_stat;
+create temp table place_stat as (
+	select p.type, p.name, p.peoples population, p.geom
+	from regions r
+	join russia.place_all p
+		on st_intersects(r.geom, p.geom)
+			and p.level = 3
+);
+create index on place_stat(population);
+create index on place_stat(name);
+create index on place_stat(type);
+create index on place_stat using gist(geom);
+create index on place_stat using gist((geom::geography));
+
+--select * from place_stat
+
+/* Сопоставляем точки населённых пунктов из OpenStreetMap и третьего источника */
+drop table if exists  place;
+create temp table place as
+select
+	p1.id,
+	coalesce(p2.type, '') type_stat,
+	p1.name,
+--		p2.name name_stat,
+	p1.type type_osm,
+	case 
+		when p2.population is null
+			then p1.population
+		else p2.population
+	end population,
+	case 
+		when p2.population is not null
+			then 'Росстат 2010'::text
+		when p1.population is not null 
+			then 'OpenStreetMap'::text
+	end population_source,
+	p1.geom,
+	p1.poselenie,
+	p1.raion,
+	p1.region
+from place_osm p1
+left join lateral (
+	select p2.*
+	from place_stat p2
+	where st_dwithin(p1.geom::geography, p2.geom::geography, 10000)
+		and p1.name ilike p2.name
+	order by p1.geom::geography <-> p2.geom::geography
+	limit 1
+) p2 on true;
+
+--select * from place where population > 0
+create index on place using gist(geom);
+create index on place using gist((geom::geography));
  
- 
- 
+--select * from place
+
+-- Непосредственно статистика по объектам размещения (запрос для Excel)
+select --distinct on(h.company_id)
+	p.id,
+	p.name "Населённый пункт",
+	coalesce(p.poselenie, '') "Муниц. образование",
+	p.raion "Район/Округ",
+	p.region "Субъект РФ",
+	coalesce(count(distinct h.company_id)) "Всего объектов размещ., шт.",
+		case when coalesce(count(h.*) filter(where h.rubrics = 'Гостиница'), 0) > 0 then (coalesce(count(h.*) filter(where h.rubrics = 'Гостиница'), 0)::text || ' гостиниц (' || coalesce(array_to_string(array_agg(h.name) filter(where h.rubrics = 'Гостиница'), ', '), '') || '), ') else '' end
+		|| case when coalesce(count(h.*) filter(where h.rubrics = 'Детский лагерь отдыха'), 0) > 0 then (coalesce(count(h.*) filter(where h.rubrics = 'Детский лагерь отдыха'), 0)::text || ' детских лагерей отдыха (' || coalesce(array_to_string(array_agg(h.name) filter(where h.rubrics = 'Детский лагерь отдыха'), ', '), '')  || '), ') else '' end
+		|| case when coalesce(count(h.*) filter(where h.rubrics = 'Дом отдыха'), 0) > 0 then (coalesce(count(h.*) filter(where h.rubrics = 'Дом отдыха'), 0)::text || ' домов отдыха (' || coalesce(array_to_string(array_agg(h.name) filter(where h.rubrics = 'Дом отдыха'), ', '), '')  || '), ') else '' end
+		|| case when coalesce(count(h.*) filter(where h.rubrics = 'Санаторий'), 0) > 0 then (coalesce(count(h.*) filter(where h.rubrics = 'Санаторий'), 0)::text || ' санаториев (' || coalesce(array_to_string(array_agg(h.name) filter(where h.rubrics = 'Санаторий'), ', '), '')  || '), ') else '' end
+		|| case when coalesce(count(h.*) filter(where h.rubrics = 'Турбаза'), 0) > 0 then (coalesce(count(h.*) filter(where h.rubrics = 'Турбаза'), 0)::text || ' турбаз (' || coalesce(array_to_string(array_agg(h.name) filter(where h.rubrics = 'Турбаза'), ', '), '')) else '' end
+	"Список объектов размещ."
+from tmp.tmp_hotel_golden_ring h
+join lateral (
+	select p.*
+	from place p
+	where st_dwithin(h.geom::geography, p.geom::geography, 5000)
+	order by h.geom::geography <-> p.geom::geography 
+	limit 1
+) p on true
+group by
+	p.id,
+--	h.company_id,
+	p.name,
+	p.poselenie,
+	p.raion,
+	p.region
+--order by hotels_count desc
+
  

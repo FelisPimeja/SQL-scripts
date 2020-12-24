@@ -670,7 +670,41 @@ order by id_gis;
 
 
 
-
+/* Сведение рубрикатора Яндекса */
+select
+	distinct a.rubr,
+	category,
+	subrubrics,
+	sdz,
+	odz,
+	greenz,
+	leisurez,
+	ipa,
+	stretail,
+	trade,
+	food,
+	services,
+	find_center
+from (select replace(unnest(string_to_array(replace(replace(cat_name, '""', '","'), '","', '";"'), ';')), '"', '') rubr from tmp.tmp_poi) a
+left join (
+	select distinct on(rubrics)
+		rubrics,
+		category,
+		subrubrics,
+		sdz,
+		odz,
+		greenz,
+		leisurez,
+		ipa,
+		stretail,
+		trade,
+		food,
+		services,
+		find_center
+	from index2019.data_poi
+) r 
+	on a.rubr = r.rubrics
+order by rubr
 
 
 
