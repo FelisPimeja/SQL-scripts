@@ -709,6 +709,151 @@ order by rubr
 
 
 
+-- Подсчёт площади и протяжённости промтерриторий у воды на 14 городов
+
+drop table if exists water; 
+create temp table water as 
+	select w.*, c.id_gis, c.city
+	from russia.city c
+	left join osm.waterareas_ru w 
+		on st_intersects(c.geom, w.geom)
+--			and w.type = 'river'
+	where c.city in (
+		'Нижний Новгород',
+		'Самара',
+		'Казань',
+		'Набережные Челны',
+		'Уфа',
+		'Ярославль',
+		'Волгоград',
+		'Пенза',
+		'Тверь',
+		'Тула',
+		'Иваново',
+		'Тольятти',
+		'Пермь',
+		'Астрахань'
+	)
+;
+
+create index on water using gist(geom);
+drop table if exists rivers; 
+create temp table rivers as
+	select w.*, c.id_gis, c.city
+	from russia.city c
+	left join osm.waterways_ru w 
+		on st_dwithin(c.geom::geography, w.geom::geography, 500)
+			and w.type = 'river'
+			and w.name in ('Волга', 'Кама', 'Ока', 'Белая', 'Упа', 'Уводь', 'Сура')
+	where c.city in (
+		'Нижний Новгород',
+		'Самара',
+		'Казань',
+		'Набережные Челны',
+		'Уфа',
+		'Ярославль',
+		'Волгоград',
+		'Пенза',
+		'Тверь',
+		'Тула',
+		'Иваново',
+		'Тольятти',
+		'Пермь',
+		'Астрахань'
+	)	
+;
+create index on rivers using gist(geom);
+
+drop table if exists waterareas; 
+create temp table waterareas as
+	select distinct on (w.geom)
+		w.*
+	from rivers r
+	left join water w 
+		on st_intersects(w.geom, r.geom)
+;
+create index on waterareas using gist(geom);
+create index on waterareas using gist((geom::geography));
+
+drop table if exists industrial; 
+create temp table industrial as 
+	select l.*, c.id_gis
+	from russia.city c
+	left join osm.landusages_ru l 
+		on st_intersects(c.geom, l.geom)
+			and l.type in (
+				'industrial',
+				'railway',
+				'military',
+				'garages',
+				'plant'
+			)		
+	where c.city in (
+		'Нижний Новгород',
+		'Самара',
+		'Казань',
+		'Набережные Челны',
+		'Уфа',
+		'Ярославль',
+		'Волгоград',
+		'Пенза',
+		'Тверь',
+		'Тула',
+		'Иваново',
+		'Тольятти',
+		'Пермь',
+		'Астрахань'
+	)
+;
+create index on industrial using gist(geom);
+create index on industrial using gist((geom::geography));
+
+drop table if exists w_industrial; 
+create temp table w_industrial as 
+	select i.*, w.city
+	from waterareas w
+	left join industrial i
+		on st_dwithin(w.geom::geography, i.geom::geography, 25)
+	order by city;
+create index on w_industrial using gist(geom);
+create index on w_industrial using gist((geom::geography));
+
+drop table if exists tmp.shore_industrial; 
+create table tmp.shore_industrial as 
+
+with dis_w as (
+	select id_gis, ST_Boundary(st_union(geom)) geom, st_union(geom) u_geom 
+	from waterareas
+	group by id_gis
+),
+buf_ind as (
+	select
+		id_gis,
+		st_union(st_buffer(geom::geography, 30)::geometry) geom,
+		st_union(geom) i_geom,
+		round((st_area(st_union(geom)::geography) / 10000)::numeric, 2) sum_industrial_area_ha
+	from w_industrial i
+	group by id_gis
+),
+len as (
+	select
+		id_gis,
+		round((st_length(st_intersection(w.geom, i.geom)::geography) / 1000)::numeric, 2) sum_ind_len_km,
+		sum_industrial_area_ha,
+		st_multi(w.u_geom)::geometry(multipolygon, 4326) water_geom,
+		st_multi(i.i_geom)::geometry(multipolygon, 4326) ind_geom,
+		st_intersection(w.geom, i.geom) inter
+	from dis_w w 
+	join buf_ind i using(id_gis)
+)
+select
+	c.city, l.*
+from russia.city c 
+join len l using(id_gis)
+order by c.city;
+
+
+
 
 
 
