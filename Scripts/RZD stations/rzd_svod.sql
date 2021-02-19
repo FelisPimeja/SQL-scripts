@@ -476,3 +476,466 @@ comment on column russia.rzd_railway_station_svod.surroundings is 'Окруже�
 comment on column russia.rzd_railway_station_svod.building_features is 'Особенность здания (при наличии)';
 comment on column russia.rzd_railway_station_svod.contacts is 'Контакты';
 comment on column russia.rzd_railway_station_svod.track_divarication is 'Наличие путевого развития';
+
+
+
+alter table tmp.tmp_railway_service_areas 
+	add primary key(id)
+
+update tmp.tmp_railway_service_areas s
+	set pop_in_2km_radius = r.sum_pop
+	from (			
+		--explain
+		select s.id, s.name, sum(p.population) sum_pop
+		from tmp.tmp_railway_service_areas s
+		join index2019.data_pop_altermag p 
+			on st_intersects(s.geom, p.geom)
+				and s.id_gis = p.id_gis
+		group by s.id, s.name
+	) r 
+	where s.id = r.id
+	
+	
+	
+-- Геоморфология:	
+	
+case
+	when  "DN" = 1  then 'Равнина'
+	when  "DN" = 2  then 'Вершина'
+	when  "DN" = 3  then 'Хребет'
+	when  "DN" = 4  then 'Уступ'
+	when  "DN" = 5  then 'Отрог'
+	when  "DN" = 6  then 'Склон'
+	when  "DN" = 7  then 'Котловина'
+	when  "DN" = 8  then 'Подножье'
+	when  "DN" = 9  then 'Долина'
+	when  "DN" = 10  then 'Лощина'
+end
+
+
+
+
+
+
+
+
+create index on tmp.tmp_rzd_stations using gist (geom);
+create index on tmp.tmp_rzd_stations using gist ((geom::geography));
+--select count(*) from russia.rzd_railway_station_svod;
+
+alter table tmp.tmp_rzd_stations
+	alter column geom type geometry(point, 4326) using st_transform(geom, 4326)
+
+
+select
+	s.id,
+	s.name,
+	ts.id,
+	ts.name,
+	s.geom,
+	ts.geom
+from russia.rzd_railway_station_svod s
+left join tmp.tmp_rzd_stations ts 
+	on st_dwithin(s.geom::geography, ts.geom::geography, 1)
+where s.name <> ts.name
+	
+
+
+
+delete from russia.rzd_railway_station_svod
+where id in (14002, 14003)
+
+
+delete from tmp.tmp_rzd_stations
+where id in (4244, 4243)
+
+
+alter table russia.rzd_railway_station_svod
+	add column sde_id int4
+	
+	
+update russia.rzd_railway_station_svod s
+	set objectid = ts.objectid
+	from tmp.tmp_rzd_stations ts 
+	where st_dwithin(s.geom::geography, ts.geom::geography, 1)
+	
+
+	
+	
+	
+	
+alter table tmp.tmp_rzd_stations
+	alter column terminal_building type bool using terminal_building::bool,
+	alter column is_okn type bool using is_okn::bool,
+	alter column is_operating type bool using is_operating::bool,
+	alter column suburb_trains_separate_terminal type bool using suburb_trains_separate_terminal::bool,
+	alter column track_divarication type bool using track_divarication::bool
+
+	
+	
+alter table russia.rzd_railway_station_svod
+	add column base_use text
+	
+	
+update russia.rzd_railway_station_svod
+	set base_use = 'непассажирская станция'
+	where base_use = 'грузовая станция'
+	
+
+create index on tmp.tmp_ya_np_station using gist (geom);
+create index on tmp.tmp_ya_np_station using gist ((geom::geography));
+
+
+select s.id, s.name, np.name, s.geom, np.geom np_geom, st_collect(s.geom, np.geom) collection
+from russia.rzd_railway_station_svod s
+join tmp.tmp_ya_np_station np 
+	on st_dwithin(s.geom::geography, np.geom::geography, 500)
+		and not st_dwithin(s.geom::geography, np.geom::geography, 400)
+	
+	
+update russia.rzd_railway_station_svod s
+	set
+		name = np.name,
+		base_use = 'непассажирская станция'
+	from tmp.tmp_ya_np_station np 
+	where st_dwithin(s.geom::geography, np.geom::geography, 400)
+		and not st_dwithin(s.geom::geography, np.geom::geography, 300)
+		
+
+		
+delete from tmp.tmp_ya_np_station np
+using russia.rzd_railway_station_svod s
+where st_dwithin(s.geom::geography, np.geom::geography, 400)
+		
+
+insert into russia.rzd_railway_station_svod (name, geom)
+	select name, geom
+	from tmp.tmp_ya_np_station
+
+alter table russia.rzd_railway_station_svod
+	alter column id 
+		add generated always as identity (start with 14100)
+
+		
+create index on tmp.tmp_ya_dzd using gist (geom);
+create index on tmp.tmp_ya_dzd using gist ((geom::geography));
+
+
+select max(id) from russia.rzd_railway_station_svod
+
+select s.id, s.name, d.name, s.geom, d.geom d_geom, st_collect(s.geom, d.geom) collection
+from tmp.tmp_ya_np_station s
+join tmp.tmp_ya_dzd d 
+	on st_dwithin(s.geom::geography, d.geom::geography, 100)
+	
+	
+	
+delete from tmp.tmp_ya_np_station s
+using tmp.tmp_ya_dzd d 
+where st_dwithin(s.geom::geography, d.geom::geography, 100)
+
+
+
+update russia.rzd_railway_station_svod
+	set base_use = 'непассажирская станция'
+		where id >= 14100
+		
+		
+		
+		
+		
+create index on tmp.tmp_rzd_ya_stations using gist (geom);
+create index on tmp.tmp_rzd_ya_stations using gist ((geom::geography));
+
+
+select s.id, s.name, ya.name, round(st_distance(s.geom::geography, ya.geom::geography)::numeric) dist, st_collect(s.geom, ya.geom) collection
+from russia.rzd_railway_station_svod s
+left join lateral (
+	select * from tmp.tmp_rzd_ya_stations ya
+	where st_dwithin(s.geom::geography, ya.geom::geography, 400)
+	order by s.geom::geography <-> ya.geom::geography
+	limit 1
+) ya on true
+order by dist nulls last
+
+
+truncate russia.rzd_railway_station_svod
+
+insert into russia.rzd_railway_station_svod (
+"esr_id",
+"type",
+"name",
+"railroad_name",
+"operation_list",
+"transit_point",
+"class",
+"comment",
+"name_en",
+"id_gis",
+"settlement_name",
+"region",
+"dzv_terminal",
+"cdpo_terminal",
+"dze_terminal",
+"dze_building",
+"terminal_name",
+"terminal_address",
+"terminal_okn_rzd",
+"terminal_okn_mincult",
+"okn_id_mincult",
+"okn_name_mincult",
+"okn_date",
+"x",
+"y",
+"geom",
+"station_building_id",
+"climate_region",
+"climate_region_koppen",
+"climate_region_koppen_def",
+"topography",
+"settlement_pop",
+"settlement_size",
+"settlement_economy_level",
+"purchase_power",
+"settlement_admin_status",
+"fz",
+"pop_in_2km_radius",
+"multimodality",
+"terminal_building",
+"is_okn",
+"building_type",
+"address",
+"passanger_type",
+"build_date",
+"architect",
+"project",
+"is_operating",
+"current_status",
+"in_settlement_location",
+"in_settlement_role",
+"building_platform_location",
+"relative_to_ground_level",
+"tracks_total",
+"platforms_total",
+"high_platforms_total",
+"low_platforms_total",
+"middle_platforms_total",
+"terminal_platform_relation",
+"comment_on_tracks_platforms",
+"suburb_trains_separate_terminal",
+"long_distance_trains_winter",
+"long_distance_trains_summer",
+"suburb_trains_winter",
+"suburb_trains_summer",
+"passanger_flow_suburb_trains",
+"passanger_flow_long_distance_trains",
+"terminal_total_area_m2",
+"terminal_common_use_area_m2",
+"functional_use",
+"services",
+"transport_accessability",
+"disabled_accessability",
+"comment_disabled_accessability",
+"surroundings",
+"building_features",
+"contacts",
+"track_divarication",
+"base_use",
+"objectid"
+)
+select
+"esr_id",
+"type",
+"name",
+"railroad_name",
+"operation_list",
+"transit_point",
+"class",
+"comment",
+"name_en",
+"id_gis",
+"settlement_name",
+"region",
+"dzv_terminal",
+"cdpo_terminal",
+"dze_terminal",
+"dze_building",
+"terminal_name",
+"terminal_address",
+"terminal_okn_rzd",
+"terminal_okn_mincult",
+"okn_id_mincult",
+"okn_name_mincult",
+"okn_date",
+"x",
+"y",
+"geom",
+"station_building_id",
+"climate_region",
+"climate_region_koppen",
+"climate_region_koppen_def",
+"topography",
+"settlement_pop",
+"settlement_size",
+"settlement_economy_level",
+"purchase_power",
+"settlement_admin_status",
+"fz",
+"pop_in_2km_radius",
+"multimodality",
+"terminal_building",
+"is_okn",
+"building_type",
+"address",
+"passanger_type",
+"build_date",
+"architect",
+"project",
+"is_operating",
+"current_status",
+"in_settlement_location",
+"in_settlement_role",
+"building_platform_location",
+"relative_to_ground_level",
+"tracks_total",
+"platforms_total",
+"high_platforms_total",
+"low_platforms_total",
+"middle_platforms_total",
+"terminal_platform_relation",
+"comment_on_tracks_platforms",
+"suburb_trains_separate_terminal",
+"long_distance_trains_winter",
+"long_distance_trains_summer",
+"suburb_trains_winter",
+"suburb_trains_summer",
+"passanger_flow_suburb_trains",
+"passanger_flow_long_distance_trains",
+"terminal_total_area_m2",
+"terminal_common_use_area_m2",
+"functional_use",
+"services",
+"transport_accessability",
+"disabled_accessability",
+"comment_disabled_accessability",
+"surroundings",
+"building_features",
+"contacts",
+"track_divarication",
+case when "purpose" is not null then "purpose" else "base_use" end "base_use",
+"objectid"
+from tmp.rzd_railway_station_svod_bak
+
+
+
+update russia.rzd_railway_station_svod s
+set
+	name = ya.name,
+	base_use = case when base_use is null then 'Пассажирская станция' else base_use end
+from (
+	select s.id, ya.name, round(st_distance(s.geom::geography, ya.geom::geography)::numeric) dist, st_collect(s.geom, ya.geom) collection
+	from russia.rzd_railway_station_svod s
+	join lateral (
+		select * from tmp.tmp_rzd_ya_stations ya
+		where st_dwithin(s.geom::geography, ya.geom::geography, 400)
+		order by s.geom::geography <-> ya.geom::geography
+		limit 1
+	) ya on true
+) ya
+where s.id = ya.id
+
+
+insert into russia.rzd_railway_station_svod (name, contacts, geom)
+	select *
+	from (
+		select ya.name, ya.phones, ya.geom
+		from tmp.tmp_rzd_ya_stations ya
+		left join russia.rzd_railway_station_svod s
+			on ya.name = s."name" 
+				and st_dwithin(s.geom::geography, ya.geom::geography, 400)
+		where s.id is null
+			and ya.category_name not like '%Железнодорожный вокзал%'
+	) ya
+	
+
+update russia.rzd_railway_station_svod
+	set base_use = 'Непассажирская станция'
+	where base_use = 'непассажирская станция'
+
+alter table russia.rzd_railway_station_svod 
+	drop column base_use
+
+alter table russia.rzd_railway_station_svod 
+	rename column purpose to base_use
+
+
+	
+	
+	
+	
+update russia.rzd_railway_station_svod s
+	set id_gis = c.id_gis
+	from russia.city c 
+	where st_intersects(c.geom, s.geom)
+
+	
+
+update russia.rzd_railway_station_svod s
+	set region = r.name
+	from russia.region_boundary_land r 
+	where st_intersects(r.geom, s.geom)
+
+
+update russia.rzd_railway_station_svod s
+	set
+		x = st_x(geom),
+		y = st_y(geom)
+	
+	
+update russia.rzd_railway_station_svod s
+	set railroad_name = null 
+	where railroad_name = ''
+
+	
+	
+update russia.rzd_railway_station_svod s
+	set railroad_name = r.branch_name
+	from russia.rzd_branche_zone r 
+	where st_intersects(r.geom, s.geom)
+	
+	
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+alter table russia.rzd_railway_station_svod
+	add column vkz_ind int,
+	add column passanger_flow_sum int,
+	add column passanger_flow_balance numeric,
+	add column station_morphology text
+	
+	
+	
+	
+	
+	
+update russia.rzd_railway_station_svod s
+	set
+		vkz_ind = t.vkz_ind,
+		passanger_flow_sum = t."Пассажиропоток общий",
+		passanger_flow_balance = t."Баланс пассажиропотока (пригородн"::numeric,
+		station_morphology = t."Морфология станции"
+	from tmp.tmp_rzd_stations2 t 
+	where s.objectid  = t.objectid 
+	
+	
+	
