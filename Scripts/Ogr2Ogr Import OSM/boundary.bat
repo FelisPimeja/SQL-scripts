@@ -52,7 +52,7 @@ create index on russia.osm_admin_boundary_federal_district using gin(other_tags)
 create index on russia.osm_admin_boundary_federal_district using gist(geom); ^
 create index osm_admin_boundary_federal_district_geog_idx on russia.osm_admin_boundary_federal_district using gist((geom::geography)); ^
 /* Комментарии */ ^
-comment on table russia.osm_admin_boundary_federal_district is 'Административные границы Федеральных округов России  (OpenStreetMap). Актуальность - 15.08.2020'; ^
+comment on table russia.osm_admin_boundary_federal_district is 'Административные границы Федеральных округов России  (OpenStreetMap). Актуальность - %date%'; ^
 comment on column russia.osm_admin_boundary_federal_district.id is 'Первичный ключ'; ^
 comment on column russia.osm_admin_boundary_federal_district.name is 'Название Федерального округа'; ^
 comment on column russia.osm_admin_boundary_federal_district.wikipedia_link is 'Ссылка на статью в Википедии'; ^
@@ -75,7 +75,7 @@ create index on russia.osm_admin_boundary_region using gin(other_tags); ^
 create index on russia.osm_admin_boundary_region using gist(geom); ^
 create index osm_admin_boundary_region_geog_idx on russia.osm_admin_boundary_region using gist((geom::geography)); ^
 /* Комментарии */ ^
-comment on table russia.osm_admin_boundary_region is 'Административные границы Субъектов России  (OpenStreetMap). Актуальность - 15.08.2020'; ^
+comment on table russia.osm_admin_boundary_region is 'Административные границы Субъектов России  (OpenStreetMap). Актуальность - %date%'; ^
 comment on column russia.osm_admin_boundary_region.id is 'Первичный ключ'; ^
 comment on column russia.osm_admin_boundary_region.name is 'Название Субъекта РФ'; ^
 comment on column russia.osm_admin_boundary_region.wikipedia_link is 'Ссылка на статью в Википедии'; ^
@@ -145,7 +145,7 @@ create index on russia.osm_boundary_time_zone using gin(other_tags); ^
 create index on russia.osm_boundary_time_zone using gist(geom); ^
 create index osm_boundary_time_zone_geog_idx on russia.osm_boundary_time_zone using gist((geom::geography)); ^
 /* Комментарии */ ^
-comment on table russia.osm_boundary_time_zone is 'Часовые пояса на территории России  (OpenStreetMap). Актуальность - 15.08.2020'; ^
+comment on table russia.osm_boundary_time_zone is 'Часовые пояса на территории России  (OpenStreetMap). Актуальность - %date%'; ^
 comment on column russia.osm_boundary_time_zone.id is 'Первичный ключ'; ^
 --comment on column russia.osm_boundary_time_zone.ref is 'Код часового пояса'; ^
 comment on column russia.osm_boundary_time_zone.name is 'Название часового кояса'; ^
@@ -169,7 +169,7 @@ create index on russia.osm_admin_boundary_municipal_level1 using gin(other_tags)
 create index on russia.osm_admin_boundary_municipal_level1 using gist(geom); ^
 create index osm_admin_boundary_municipal_level1_geog_idx on russia.osm_admin_boundary_municipal_level1 using gist((geom::geography)); ^
 /* Комментарии */ ^
-comment on table russia.osm_admin_boundary_municipal_level1 is 'Административные границы муниципальных образований первого уровня (Районы, городские и муниципальные округа и ЗАТО): (OpenStreetMap). Актуальность - 15.08.2020'; ^
+comment on table russia.osm_admin_boundary_municipal_level1 is 'Административные границы муниципальных образований первого уровня (Районы, городские и муниципальные округа и ЗАТО): (OpenStreetMap). Актуальность - %date%'; ^
 comment on column russia.osm_admin_boundary_municipal_level1.id is 'Первичный ключ'; ^
 comment on column russia.osm_admin_boundary_municipal_level1.name is 'Название образования'; ^
 comment on column russia.osm_admin_boundary_municipal_level1.wikipedia_link is 'Ссылка на статью в Википедии'; ^
@@ -192,7 +192,7 @@ create index on russia.osm_admin_boundary_municipal_level2 using gin(other_tags)
 create index on russia.osm_admin_boundary_municipal_level2 using gist(geom); ^
 create index osm_admin_boundary_municipal_level2_geog_idx on russia.osm_admin_boundary_municipal_level2 using gist((geom::geography)); ^
 /* Комментарии */ ^
-comment on table russia.osm_admin_boundary_municipal_level2 is 'Административные границы муниципальных образований второго уровня (Городские и сельские поселения, внутригородские районы): (OpenStreetMap). Актуальность - 15.08.2020'; ^
+comment on table russia.osm_admin_boundary_municipal_level2 is 'Административные границы муниципальных образований второго уровня (Городские и сельские поселения, внутригородские районы): (OpenStreetMap). Актуальность - %date%'; ^
 comment on column russia.osm_admin_boundary_municipal_level2.id is 'Первичный ключ'; ^
 comment on column russia.osm_admin_boundary_municipal_level2.name is 'Название образования'; ^
 comment on column russia.osm_admin_boundary_municipal_level2.wikipedia_link is 'Ссылка на статью в Википедии'; ^
