@@ -34,7 +34,7 @@ create index on russia.roads_osm(lane); ^
 create index on russia.roads_osm(max_speed); ^
 create index on russia.roads_osm(surface); ^
 create index on russia.roads_osm using gin(other_tags); ^
-create index roads_osm_geog_idx on russia.roads_osm using gist((geom::geography));^
+create index roads_osm_geog_idx on russia.roads_osm using gist((geom::geography)); ^
 /* Комментарии */ ^
 comment on table russia.roads_osm is 'Дороги (OpenStreetMap). Актуальность - 15.08.2020';^
 comment on column russia.roads_osm.id is 'Первичный ключ';^
