@@ -8,7 +8,7 @@ set startTimeRoad=%time%
  --config OSM_CONFIG_FILE "D:\apetrov\Projects\Postgres\OSM\Osmconf\osmconf.ini" ^
  --config PG_USE_COPY YES ^
  --config MAX_TMPFILE_SIZE 2048 ^
- -nln russia.osm_highway ^
+ -nln russia.roads_osm ^
  -nlt MULTILINESTRING ^
  -lco GEOMETRY_NAME=geom ^
  -lco SPATIAL_INDEX=NONE ^
@@ -22,30 +22,30 @@ ogr2ogr ^
  PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
  -sql ^
 "/* Проверка геометрии, id_gis и площади */ ^
-update russia.osm_highway set geom = st_collectionextract(st_makevalid(st_removerepeatedpoints(st_snaptogrid(geom, 0.0000001))), 2); ^
-delete from russia.osm_highway where st_isempty(geom) is true; ^
-alter table russia.osm_highway add column id_gis smallint, add constraint fk_id_gis foreign key(id_gis) references russia.city(id_gis); ^
-create index on russia.osm_highway using gist(geom);^
-update russia.osm_highway b set id_gis=bn.id_gis from russia.city bn where st_within(b.geom, bn.geom); ^
+update russia.roads_osm set geom = st_collectionextract(st_makevalid(st_removerepeatedpoints(st_snaptogrid(geom, 0.0000001))), 2); ^
+delete from russia.roads_osm where st_isempty(geom) is true; ^
+alter table russia.roads_osm add column id_gis smallint, add constraint fk_id_gis foreign key(id_gis) references russia.city(id_gis); ^
+create index on russia.roads_osm using gist(geom);^
+update russia.roads_osm b set id_gis=bn.id_gis from russia.city bn where st_within(b.geom, bn.geom); ^
 /* Индексы */ ^
-create index on russia.osm_highway(type); ^
-create index on russia.osm_highway(id_gis); ^
-create index on russia.osm_highway(lane); ^
-create index on russia.osm_highway(max_speed); ^
-create index on russia.osm_highway(surface); ^
-create index on russia.osm_highway using gin(other_tags); ^
-create index highway_geog_idx on russia.osm_highway using gist((geom::geography));^
+create index on russia.roads_osm(type); ^
+create index on russia.roads_osm(id_gis); ^
+create index on russia.roads_osm(lane); ^
+create index on russia.roads_osm(max_speed); ^
+create index on russia.roads_osm(surface); ^
+create index on russia.roads_osm using gin(other_tags); ^
+create index roads_osm_geog_idx on russia.roads_osm using gist((geom::geography));^
 /* Комментарии */ ^
-comment on table russia.osm_highway is 'Дороги (OpenStreetMap). Актуальность - 15.08.2020';^
-comment on column russia.osm_highway.id is 'Первичный ключ';^
-comment on column russia.osm_highway.type is 'Класс дороги по OpenStreetMap. См. https://wiki.openstreetmap.org/wiki/Key:highway';^
-comment on column russia.osm_highway.lane is 'Общее число полос в обе стороны';^
-comment on column russia.osm_highway.name is 'Название дороги или улицы которая по ней проходит';^
-comment on column russia.osm_highway.max_speed is 'Максимальная разрешённая скорость для легковых автомобилей';^
-comment on column russia.osm_highway.surface is 'Материал покрытия дороги';^
-comment on column russia.osm_highway.other_tags is 'Прочие теги';^
-comment on column russia.osm_highway.geom is 'Геометрия';^
-comment on column russia.osm_highway.id_gis is 'id_gis города. Внешний ключ';"
+comment on table russia.roads_osm is 'Дороги (OpenStreetMap). Актуальность - 15.08.2020';^
+comment on column russia.roads_osm.id is 'Первичный ключ';^
+comment on column russia.roads_osm.type is 'Класс дороги по OpenStreetMap. См. https://wiki.openstreetmap.org/wiki/Key:highway';^
+comment on column russia.roads_osm.lane is 'Общее число полос в обе стороны';^
+comment on column russia.roads_osm.name is 'Название дороги или улицы которая по ней проходит';^
+comment on column russia.roads_osm.max_speed is 'Максимальная разрешённая скорость для легковых автомобилей';^
+comment on column russia.roads_osm.surface is 'Материал покрытия дороги';^
+comment on column russia.roads_osm.other_tags is 'Прочие теги';^
+comment on column russia.roads_osm.geom is 'Геометрия';^
+comment on column russia.roads_osm.id_gis is 'id_gis города. Внешний ключ';"
 
 
 echo Загрузка Дорог Начало: %startTimeRoad%
