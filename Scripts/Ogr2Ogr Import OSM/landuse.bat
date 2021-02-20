@@ -27,14 +27,16 @@ ogr2ogr ^
 "/* Проверка геометрии, id_gis и площади */ ^
 update russia.landuse_osm set geom = st_collectionextract(st_makevalid(st_removerepeatedpoints(st_snaptogrid(geom, 0.0000001))), 3); ^
 delete from russia.landuse_osm where st_isempty(geom) is true; ^
-alter table russia.landuse_osm add constraint fk_id_gis foreign key(id_gis) references russia.city(id_gis); ^
+alter table russia.landuse_osm add constraint fk_id_gis foreign key(id_gis) references russia.city(id_gis), add column area_ha int; ^
 create index on russia.landuse_osm using gist(geom);^
 update russia.landuse_osm b set id_gis=bn.id_gis from russia.city bn where st_within(b.geom, bn.geom); ^
+update russia.building_osm set area_ha = round((st_area(geom::geography) / 10000)::numeric, 2); ^
 /* Индексы */ ^
 create index on russia.landuse_osm(type); ^
 create index on russia.landuse_osm(id_gis); ^
 create index on russia.landuse_osm(name); ^
 create index on russia.landuse_osm(access); ^
+create index on russia.landuse_osm(area_ha); ^
 create index on russia.landuse_osm using gin(other_tags); ^
 create index landuse_osm_geog_idx on russia.landuse_osm using gist((geom::geography)); ^
 /* Комментарии */ ^
@@ -43,6 +45,7 @@ comment on column russia.landuse_osm.id is 'Первичный ключ';^
 comment on column russia.landuse_osm.type is 'Тип землепользования по OpenStreetMap. См. https://wiki.openstreetmap.org/wiki/Key:landuse';^
 comment on column russia.landuse_osm.name is 'Название';^
 comment on column russia.landuse_osm.access is 'Возможность доступа на территорию';^
+comment on column russia.landuse_osm.area_ha is 'Площадь, га'; ^
 comment on column russia.landuse_osm.other_tags is 'Прочие теги';^
 comment on column russia.landuse_osm.geom is 'Геометрия';^
 comment on column russia.landuse_osm.id_gis is 'id_gis города. Внешний ключ';"
