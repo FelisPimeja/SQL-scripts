@@ -43,6 +43,7 @@ create index on russia.road_osm(id_gis); ^
 create index on russia.road_osm(lane); ^
 create index on russia.road_osm(max_speed); ^
 create index on russia.road_osm(surface); ^
+create index on russia.road_osm(access); ^
 create index on russia.road_osm using gin(other_tags); ^
 create index road_osm_geog_idx on russia.road_osm using gist((geom::geography)); ^
 /* Комментарии */ ^
@@ -53,6 +54,7 @@ comment on column russia.road_osm.lane is 'Общее число полос в �
 comment on column russia.road_osm.name is 'Название дороги или улицы которая по ней проходит';^
 comment on column russia.road_osm.max_speed is 'Максимальная разрешённая скорость для легковых автомобилей';^
 comment on column russia.road_osm.surface is 'Материал покрытия дороги';^
+comment on column russia.road_osm.access is 'Ограничения и запреты на доступ';^
 comment on column russia.road_osm.other_tags is 'Прочие теги';^
 comment on column russia.road_osm.geom is 'Геометрия';^
 comment on column russia.road_osm.id_gis is 'id_gis города. Внешний ключ';"
