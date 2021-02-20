@@ -1,9 +1,9 @@
 set startTimeRoad=%time%
 :: Загрузка зданий
-:: Время выполнения ~  мин.
+:: Время выполнения ~ 2 ч.
  ogr2ogr ^
  -f PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
- "D:\apetrov\Projects\Postgres\OSM\PBF\kaliningrad-latest.osm.pbf" ^
+ "D:\apetrov\Projects\Postgres\OSM\PBF\russia-latest.osm.pbf" ^
  -sql "select (case when building = 'yes' then null else building end) type, name, building_levels level, addr_postcode postcode, null id_gis, addr_street street, addr_housenumber housenumber, other_tags, geometry from multipolygons where building is not null" ^
  --config OSM_CONFIG_FILE "D:\apetrov\Projects\Postgres\OSM\Osmconf\osmconf.ini" ^
  --config PG_USE_COPY YES ^
@@ -17,7 +17,7 @@ set startTimeRoad=%time%
  -dialect SQLite ^
  -overwrite
 
-:: Приведение колонки с этажностью (почему-то работает только отдельных запросом)
+:: Приведение колонки с этажностью (почему-то работает только отдельным запросом)
 ogr2ogr ^
  PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
  -sql "alter table russia.building_osm alter column level type smallint  using(case when level ~ E'^\\d+$' then level::smallint else null end);"
