@@ -6,7 +6,7 @@ set startTime=%time%
  ogr2ogr ^
  -f PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
  "D:\apetrov\Projects\Postgres\OSM\PBF\russia-latest.osm.pbf" ^
- -sql "select highway type, name, lanes lane, max_speed, surface, access, other_tags, geometry from lines where highway is not null" ^
+ -sql "select highway type, name, lanes lane, max_speed, surface, access, null id_gis, other_tags, geometry from lines where highway is not null" ^
  --config OSM_CONFIG_FILE "D:\apetrov\Projects\Postgres\OSM\Osmconf\osmconf.ini" ^
  --config PG_USE_COPY YES ^
  --config MAX_TMPFILE_SIZE 2048 ^
@@ -14,7 +14,7 @@ set startTime=%time%
  -nlt MULTILINESTRING ^
  -lco GEOMETRY_NAME=geom ^
  -lco SPATIAL_INDEX=NONE ^
- -lco COLUMN_TYPES=other_tags=hstore ^
+ -lco COLUMN_TYPES=other_tags=hstore, id_gis=smallint ^
  -lco FID=id ^
  -dialect SQLite ^
  -overwrite

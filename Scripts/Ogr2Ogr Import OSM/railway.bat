@@ -6,7 +6,7 @@ set startTime=%time%
  ogr2ogr ^
  -f PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
  "D:\apetrov\Projects\Postgres\OSM\PBF\russia-latest.osm.pbf" ^
- -sql "select railway type, name, service, other_tags, geometry from lines where railway is not null" ^
+ -sql "select railway type, name, service, null id_gis, other_tags, geometry from lines where railway is not null" ^
  --config OSM_CONFIG_FILE "D:\apetrov\Projects\Postgres\OSM\Osmconf\osmconf.ini" ^
  --config PG_USE_COPY YES ^
  --config MAX_TMPFILE_SIZE 2048 ^
@@ -14,7 +14,7 @@ set startTime=%time%
  -nlt MULTILINESTRING ^
  -lco GEOMETRY_NAME=geom ^
  -lco SPATIAL_INDEX=NONE ^
- -lco COLUMN_TYPES=other_tags=hstore ^
+ -lco COLUMN_TYPES=other_tags=hstore,id_gis=smallint ^
  -lco FID=id ^
  -dialect SQLite ^
  -overwrite
@@ -32,6 +32,7 @@ update russia.railway_osm b set id_gis = bn.id_gis from russia.city bn where st_
 /* Индексы */ ^
 create index on russia.railway_osm(type); ^
 create index on russia.railway_osm(id_gis); ^
+create index on russia.railway_osm(name); ^
 create index on russia.railway_osm(service); ^
 create index on russia.railway_osm using gin(other_tags); ^
 create index railway_osm_geog_idx on russia.railway_osm using gist((geom::geography)); ^
