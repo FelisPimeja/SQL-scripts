@@ -1,4 +1,4 @@
-set startTimeRoad=%time%
+set startTime=%time%
 :: Загрузка дорог
 :: Время выполнения ~ мин.
 :: todo - резать по границам городов, чтобы нормально присваивать id_gis
@@ -60,5 +60,5 @@ comment on column russia.road_osm.geom is 'Геометрия';^
 comment on column russia.road_osm.id_gis is 'id_gis города. Внешний ключ';"
 
 
-echo Загрузка Дорог Начало: %startTimeRoad%
+echo Загрузка Дорог Начало: %startTime%
 echo Загрузка Дорог Завершение: %time%

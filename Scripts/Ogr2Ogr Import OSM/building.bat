@@ -1,4 +1,4 @@
-set startTimeRoad=%time%
+set startTime=%time%
 :: Загрузка зданий
 :: Время выполнения ~ 2 ч.
  ogr2ogr ^
@@ -32,7 +32,7 @@ delete from russia.building_osm where st_isempty(geom) is true; ^
 alter table russia.building_osm add constraint fk_id_gis foreign key(id_gis) references russia.city(id_gis), add column area_m2 int; ^
 create index on russia.building_osm using gist(geom);^
 update russia.building_osm b set id_gis=bn.id_gis from russia.city bn where st_within(b.geom, bn.geom); ^
-update russia.building_osm set area_m2 = st_area(geom::geography); ^
+update russia.building_osm set area_m2 = round(st_area(geom::geography)::numeric); ^
 /* Индексы */ ^
 create index on russia.building_osm(type); ^
 create index on russia.building_osm(id_gis); ^
@@ -58,6 +58,6 @@ comment on column russia.building_osm.geom is 'Геометрия'; ^
 comment on column russia.building_osm.id_gis is 'id_gis города. Внешний ключ'; "
 
 
-echo Загрузка Дорог Начало: %startTimeRoad%
+echo Загрузка Дорог Начало: %startTime%
 echo Загрузка Дорог Завершение: %time%
 
