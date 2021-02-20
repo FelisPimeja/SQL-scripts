@@ -7,7 +7,7 @@ set startTimeRoad=%time%
  ogr2ogr ^
  -f PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
  "D:\apetrov\Projects\Postgres\OSM\PBF\russia-latest.osm.pbf" ^
- -sql "select landuse type, name, access, null id_gis, other_tags, geometry from multipolygons where landuse is not null and landuse not in ('forest', 'grass', 'village_green', 'orchard', 'meadow', 'greenfield', 'recreation_ground') " ^
+ -sql "select landuse type, name, access, null id_gis, other_tags, geometry from multipolygons where landuse is not null and landuse not in ('forest', 'grass', 'village_green', 'orchard', 'meadow', 'greenfield', 'recreation_ground', 'reservoir') " ^
  --config OSM_CONFIG_FILE "D:\apetrov\Projects\Postgres\OSM\Osmconf\osmconf.ini" ^
  --config PG_USE_COPY YES ^
  --config MAX_TMPFILE_SIZE 2048 ^
@@ -27,7 +27,7 @@ ogr2ogr ^
 "/* Проверка геометрии, id_gis и площади */ ^
 update russia.landuse_osm set geom = st_collectionextract(st_makevalid(st_removerepeatedpoints(st_snaptogrid(geom, 0.0000001))), 3); ^
 delete from russia.landuse_osm where st_isempty(geom) is true; ^
-alter table russia.landuse_osm add constraint fk_id_gis foreign key(id_gis) references russia.city(id_gis), add column area_ha int; ^
+alter table russia.landuse_osm add constraint fk_id_gis foreign key(id_gis) references russia.city(id_gis), add column area_ha numeric; ^
 create index on russia.landuse_osm using gist(geom);^
 update russia.landuse_osm b set id_gis=bn.id_gis from russia.city bn where st_within(b.geom, bn.geom); ^
 update russia.building_osm set area_ha = round((st_area(geom::geography) / 10000)::numeric, 2); ^
