@@ -3,10 +3,11 @@ set startTimeRoad=%time%
 :: Время выполнения ~  ч.
 :: todo - резать по границам городов, чтобы нормально присваивать id_gis
 :: todo - прогнать и замерить время проверить ссылки на wiki
+:: todo - добавить military
  ogr2ogr ^
  -f PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
  "D:\apetrov\Projects\Postgres\OSM\PBF\russia-latest.osm.pbf" ^
- -sql "select landuse type, name, access, null id_gis, other_tags, geometry from multipolygons where landuse is not null" ^
+ -sql "select landuse type, name, access, null id_gis, other_tags, geometry from multipolygons where landuse is not null and landuse not in ('forest', 'grass', 'village_green', 'orchard', 'meadow', 'greenfield', 'recreation_ground') " ^
  --config OSM_CONFIG_FILE "D:\apetrov\Projects\Postgres\OSM\Osmconf\osmconf.ini" ^
  --config PG_USE_COPY YES ^
  --config MAX_TMPFILE_SIZE 2048 ^
@@ -37,10 +38,10 @@ create index on russia.landuse_osm(access); ^
 create index on russia.landuse_osm using gin(other_tags); ^
 create index landuse_osm_geog_idx on russia.landuse_osm using gist((geom::geography)); ^
 /* Комментарии */ ^
-comment on table russia.landuse_osm is 'Здания (OpenStreetMap). Актуальность - %date%';^
+comment on table russia.landuse_osm is 'Землепользования (OpenStreetMap). Актуальность - %date%';^
 comment on column russia.landuse_osm.id is 'Первичный ключ';^
-comment on column russia.landuse_osm.type is 'Тип здания по OpenStreetMap. См. https://wiki.openstreetmap.org/wiki/Key:landuse';^
-comment on column russia.landuse_osm.name is 'Название здания';^
+comment on column russia.landuse_osm.type is 'Тип землепользования по OpenStreetMap. См. https://wiki.openstreetmap.org/wiki/Key:landuse';^
+comment on column russia.landuse_osm.name is 'Название';^
 comment on column russia.landuse_osm.access is 'Возможность доступа на территорию';^
 comment on column russia.landuse_osm.other_tags is 'Прочие теги';^
 comment on column russia.landuse_osm.geom is 'Геометрия';^
