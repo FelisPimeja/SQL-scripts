@@ -29,9 +29,10 @@ ogr2ogr ^
 "/* Проверка геометрии, id_gis и площади */ ^
 update russia.building_osm set geom = st_collectionextract(st_makevalid(st_removerepeatedpoints(st_snaptogrid(geom, 0.0000001))), 3); ^
 delete from russia.building_osm where st_isempty(geom) is true; ^
-alter table russia.building_osm add constraint fk_id_gis foreign key(id_gis) references russia.city(id_gis); ^
+alter table russia.building_osm add constraint fk_id_gis foreign key(id_gis) references russia.city(id_gis), add column area_m2 int; ^
 create index on russia.building_osm using gist(geom);^
 update russia.building_osm b set id_gis=bn.id_gis from russia.city bn where st_within(b.geom, bn.geom); ^
+update russia.building_osm set area_m2 = st_area(geom::geography); ^
 /* Индексы */ ^
 create index on russia.building_osm(type); ^
 create index on russia.building_osm(id_gis); ^
@@ -39,20 +40,22 @@ create index on russia.building_osm(level); ^
 create index on russia.building_osm(postcode); ^
 create index on russia.building_osm(street); ^
 create index on russia.building_osm(housenumber); ^
+create index on russia.building_osm(area_m2); ^
 create index on russia.building_osm using gin(other_tags); ^
 create index building_osm_geog_idx on russia.building_osm using gist((geom::geography)); ^
 /* Комментарии */ ^
-comment on table russia.building_osm is 'Здания (OpenStreetMap). Актуальность - %date%';^
-comment on column russia.building_osm.id is 'Первичный ключ';^
-comment on column russia.building_osm.type is 'Тип здания по OpenStreetMap. См. https://wiki.openstreetmap.org/wiki/Key:building';^
-comment on column russia.building_osm.name is 'Название здания';^
-comment on column russia.building_osm.level is 'Максимальная этажность';^
-comment on column russia.building_osm.postcode is 'Почтовый код';^
-comment on column russia.building_osm.street is 'Улица';^
-comment on column russia.building_osm.housenumber is 'Номер дома';^
-comment on column russia.building_osm.other_tags is 'Прочие теги';^
-comment on column russia.building_osm.geom is 'Геометрия';^
-comment on column russia.building_osm.id_gis is 'id_gis города. Внешний ключ';"
+comment on table russia.building_osm is 'Здания (OpenStreetMap). Актуальность - %date%'; ^
+comment on column russia.building_osm.id is 'Первичный ключ'; ^
+comment on column russia.building_osm.type is 'Тип здания по OpenStreetMap. См. https://wiki.openstreetmap.org/wiki/Key:building'; ^
+comment on column russia.building_osm.name is 'Название здания'; ^
+comment on column russia.building_osm.level is 'Максимальная этажность'; ^
+comment on column russia.building_osm.postcode is 'Почтовый код'; ^
+comment on column russia.building_osm.street is 'Улица'; ^
+comment on column russia.building_osm.housenumber is 'Номер дома'; ^
+comment on column russia.building_osm.area_m2 is 'Площадь, м2'; ^
+comment on column russia.building_osm.other_tags is 'Прочие теги'; ^
+comment on column russia.building_osm.geom is 'Геометрия'; ^
+comment on column russia.building_osm.id_gis is 'id_gis города. Внешний ключ'; "
 
 
 echo Загрузка Дорог Начало: %startTimeRoad%
