@@ -1,7 +1,6 @@
 set startTime=%time%
 :: Загрузка точечных преград
 :: Время выполнения ~  мин.
-:: todo - резать по границам городов, чтобы нормально присваивать id_gis
 :: todo - прогнать и замерить время проверить ссылки на wiki
  ogr2ogr ^
  -f PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
