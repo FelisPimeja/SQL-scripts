@@ -1,4 +1,4 @@
-set startTimeAdmin=%time%
+set startTime=%time%
 :: Загрузка административных границ всех уровней
 :: Время выполнения ~ 13 мин.
 :: Загрузка всех границ для последующего разбора
@@ -205,6 +205,6 @@ ogr2ogr ^
  PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
  -sql "drop table if exists russia.osm_boundary"
 
-echo Загрузка Административных границ Начало: %startTimeAdmin%
+echo Загрузка Административных границ Начало: %startTime%
 echo Загрузка Административных границ Завершение: %time%
 

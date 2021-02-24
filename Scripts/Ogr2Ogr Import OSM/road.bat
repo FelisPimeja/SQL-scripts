@@ -1,10 +1,12 @@
-set startTimeRoad=%time%
+set startTime=%time%
 :: Загрузка дорог
-:: Время выполнения ~ 70 мин.
+:: Время выполнения ~ мин.
+:: todo - резать по границам городов, чтобы нормально присваивать id_gis
+:: todo - потестить и замерить новое время
  ogr2ogr ^
  -f PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
  "D:\apetrov\Projects\Postgres\OSM\PBF\russia-latest.osm.pbf" ^
- -sql "select highway type, name, (case when lanes = '1' then 1 when lanes = '2' then 2 when lanes = '3' then 3 when lanes = '4' then 4 when lanes = '5' then 5 when lanes = '6' then 6 when lanes = '7' then 7 when lanes = '8' then 8 when lanes = '9' then 9 when lanes = '10' then 10 when lanes = '11' then 11 when lanes = '12' then 12 else null end) lane, (case when maxspeed = 'RU:urban' then 60 when maxspeed = 'RU:motorway' then 110 when maxspeed = 'RU:rural' then 90 when maxspeed = 'RU:living_street' then 20 when maxspeed = '5' then 5 when maxspeed = '10' then 10 when maxspeed = '15' then 15 when maxspeed = '20' then 20 when maxspeed = '25' then 25 when maxspeed = '30' then 30 when maxspeed = '35' then 35 when maxspeed = '40' then 40 when maxspeed = '45' then 45 when maxspeed = '50' then 50 when maxspeed = '55' then 55 when maxspeed = '60' then 60 when maxspeed = '65' then 65 when maxspeed = '70' then 70 when maxspeed = '75' then 75 when maxspeed = '80' then 80 when maxspeed = '85' then 85 when maxspeed = '90' then 90 when maxspeed = '95' then 95 when maxspeed = '100' then 100 when maxspeed = '105' then 105 when maxspeed = '110' then 110 when maxspeed = '115' then 115 when maxspeed = '120' then 120 when maxspeed = '125' then 125 when maxspeed = '130' then 130 when maxspeed = '135' then 135 when maxspeed = '140' then 140 when maxspeed = '145' then 145 when maxspeed = '150' then 150 else null end) max_speed, surface, other_tags, geometry from lines where highway is not null" ^
+ -sql "select highway type, name, lanes lane, max_speed, surface, access, null id_gis, other_tags, geometry from lines where highway is not null" ^
  --config OSM_CONFIG_FILE "D:\apetrov\Projects\Postgres\OSM\Osmconf\osmconf.ini" ^
  --config PG_USE_COPY YES ^
  --config MAX_TMPFILE_SIZE 2048 ^
@@ -12,10 +14,18 @@ set startTimeRoad=%time%
  -nlt MULTILINESTRING ^
  -lco GEOMETRY_NAME=geom ^
  -lco SPATIAL_INDEX=NONE ^
- -lco COLUMN_TYPES=other_tags=hstore,lane=smallint,max_speed=smallint ^
+ -lco COLUMN_TYPES=other_tags=hstore, id_gis=smallint ^
  -lco FID=id ^
  -dialect SQLite ^
  -overwrite
+
+:: Приведение колонок lanes и maxspeed (почему-то работает только отдельным запросом)
+ogr2ogr ^
+ PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ -sql "alter table russia.building_osm alter column lane type smallint using(case when lane ~ E'^\\d+$' then lane::smallint else null end);" 
+ogr2ogr ^
+ PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ -sql "alter table russia.building_osm alter column maxspeed type smallint using(case when maxspeed = 'RU:urban' then 60 when maxspeed = 'RU:motorway' then 110 when maxspeed = 'RU:rural' then 90 when maxspeed = 'RU:living_street' then 20 when maxspeed ~ E'^\\d+$' then maxspeed::smallint else null end);"
 
 :: Приведение, обработка, индексы и комментарии
 ogr2ogr ^
@@ -33,6 +43,7 @@ create index on russia.road_osm(id_gis); ^
 create index on russia.road_osm(lane); ^
 create index on russia.road_osm(max_speed); ^
 create index on russia.road_osm(surface); ^
+create index on russia.road_osm(access); ^
 create index on russia.road_osm using gin(other_tags); ^
 create index road_osm_geog_idx on russia.road_osm using gist((geom::geography)); ^
 /* Комментарии */ ^
@@ -43,10 +54,11 @@ comment on column russia.road_osm.lane is 'Общее число полос в �
 comment on column russia.road_osm.name is 'Название дороги или улицы которая по ней проходит';^
 comment on column russia.road_osm.max_speed is 'Максимальная разрешённая скорость для легковых автомобилей';^
 comment on column russia.road_osm.surface is 'Материал покрытия дороги';^
+comment on column russia.road_osm.access is 'Ограничения и запреты на доступ';^
 comment on column russia.road_osm.other_tags is 'Прочие теги';^
 comment on column russia.road_osm.geom is 'Геометрия';^
 comment on column russia.road_osm.id_gis is 'id_gis города. Внешний ключ';"
 
 
-echo Загрузка Дорог Начало: %startTimeRoad%
+echo Загрузка Дорог Начало: %startTime%
 echo Загрузка Дорог Завершение: %time%
