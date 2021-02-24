@@ -1,6 +1,6 @@
 set startTime=%time%
 :: Загрузка POI
-:: Время выполнения ~  мин.
+:: Время выполнения ~ 4 мин.
 :: todo - прогнать и замерить время проверить ссылки на wiki
  ogr2ogr ^
  -f PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^

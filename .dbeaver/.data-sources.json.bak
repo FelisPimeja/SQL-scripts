@@ -1,224 +1,34 @@
 {
 	"folders": {},
 	"connections": {
-		"postgres-jdbc-174605c68d9-248a2ec40405f45d": {
+		"postgres-jdbc-177d4409115-4a99032f61948284": {
 			"provider": "postgresql",
 			"driver": "postgres-jdbc",
-			"name": "gisdb.strelkakb.ru - editor",
-			"save-password": true,
-			"read-only": false,
-			"configuration": {
-				"host": "gisdb.strelkakb.ru",
-				"port": "5433",
-				"database": "kbpvdb",
-				"url": "jdbc:postgresql://gisdb.strelkakb.ru:5433/kbpvdb",
-				"home": "postgresql_client",
-				"type": "dev",
-				"provider-properties": {
-					"@dbeaver-show-non-default-db@": "true",
-					"@dbeaver-show-template-db@": "false",
-					"postgresql.dd.plain.string": "false",
-					"postgresql.dd.tag.string": "false"
-				},
-				"auth-model": "native"
-			},
-			"custom-properties": {
-				"gis.geometry.viewer.id": "browser"
-			}
-		},
-		"postgres-jdbc-174605c80af-3a434c228eadb29": {
-			"provider": "postgresql",
-			"driver": "postgres-jdbc",
-			"name": "gisdb.strelkakb.ru - admin",
-			"save-password": true,
-			"read-only": false,
-			"configuration": {
-				"host": "gisdb.strelkakb.ru",
-				"port": "5433",
-				"database": "kbpvdb",
-				"url": "jdbc:postgresql://gisdb.strelkakb.ru:5433/kbpvdb",
-				"home": "postgresql-x64-11",
-				"type": "dev",
-				"provider-properties": {
-					"@dbeaver-show-non-default-db@": "true",
-					"@dbeaver-show-template-db@": "false",
-					"postgresql.dd.plain.string": "false",
-					"postgresql.dd.tag.string": "false"
-				},
-				"auth-model": "native"
-			}
-		},
-		"postgres-jdbc-174608af95f-402660996dd8d69b": {
-			"provider": "postgresql",
-			"driver": "postgres-jdbc",
-			"name": "local PG12",
+			"name": "kbpvdb",
 			"save-password": true,
 			"show-system-objects": true,
 			"read-only": false,
 			"configuration": {
-				"host": "localhost",
+				"host": "10.168.22.29",
 				"port": "5433",
-				"database": "postgres",
-				"url": "jdbc:postgresql://localhost:5433/postgres",
+				"database": "kbpvdb",
+				"url": "jdbc:postgresql://10.168.22.29:5433/kbpvdb",
 				"home": "postgresql-x64-12",
 				"type": "dev",
-				"provider-properties": {
-					"@dbeaver-show-non-default-db@": "true",
-					"@dbeaver-show-template-db@": "false",
-					"postgresql.dd.plain.string": "false",
-					"postgresql.dd.tag.string": "false"
+				"properties": {
+					"connectTimeout": "20",
+					"loginTimeout": "20"
 				},
-				"auth-model": "native"
-			}
-		},
-		"postgres-jdbc-176fb53d362-3c5a22049cdf08e7": {
-			"provider": "postgresql",
-			"driver": "postgres-jdbc",
-			"name": "sdekbvector",
-			"save-password": true,
-			"show-system-objects": true,
-			"read-only": false,
-			"configuration": {
-				"host": "fme.strelkakb.ru",
-				"port": "5433",
-				"database": "sdekbvector",
-				"url": "jdbc:postgresql://fme.strelkakb.ru:5433/sdekbvector",
-				"home": "postgresql-x64-12",
-				"type": "dev",
 				"provider-properties": {
 					"@dbeaver-show-non-default-db@": "true",
 					"@dbeaver-show-template-db@": "false",
 					"@dbeaver-show-unavailable-db@": "false",
+					"@dbeaver-read-all-data-types-db@": "false",
 					"postgresql.dd.plain.string": "false",
 					"postgresql.dd.tag.string": "false"
 				},
-				"auth-model": "native"
-			}
-		},
-		"sqlite_jdbc-1778864b6dd-72f2adf9817f8a57": {
-			"provider": "generic",
-			"driver": "sqlite_jdbc",
-			"name": "output_dev_08_02.gpkg",
-			"save-password": true,
-			"show-system-objects": true,
-			"read-only": false,
-			"configuration": {
-				"database": "P:\\GIS\\temp\\ST\\Яндекс_2020\\output_dev_08_02.gpkg",
-				"url": "jdbc:sqlite:P:\\GIS\\temp\\ST\\Яндекс_2020\\output_dev_08_02.gpkg",
-				"type": "dev",
-				"auth-model": "native"
-			}
-		},
-		"sqlite_jdbc-17790516ca4-15040c2281f065b": {
-			"provider": "generic",
-			"driver": "sqlite_jdbc",
-			"name": "input_dev3.gpkg",
-			"save-password": true,
-			"show-system-objects": true,
-			"read-only": false,
-			"configuration": {
-				"database": "P:\\GIS\\Tools\\FME\\Yandex\\input_dev3.gpkg",
-				"url": "jdbc:sqlite:P:\\GIS\\Tools\\FME\\Yandex\\input_dev3.gpkg",
-				"type": "dev",
 				"auth-model": "native",
 				"handlers": {}
-			}
-		},
-		"sqlite_jdbc-17790885221-7dd22febdcf566d0": {
-			"provider": "generic",
-			"driver": "sqlite_jdbc",
-			"name": "output_dev3_1.gpkg",
-			"save-password": true,
-			"show-system-objects": true,
-			"read-only": false,
-			"configuration": {
-				"database": "P:\\GIS\\Tools\\FME\\Yandex\\output_dev3_1.gpkg",
-				"url": "jdbc:sqlite:P:\\GIS\\Tools\\FME\\Yandex\\output_dev3_1.gpkg",
-				"type": "dev",
-				"auth-model": "native",
-				"handlers": {}
-			}
-		}
-	},
-	"virtual-models": {
-		"postgres-jdbc-174605c68d9-248a2ec40405f45d": {
-			"kbpvdb": {
-				"russia": {
-					":city_boundary": {
-						"description": "city,region_name"
-					},
-					":rzd_railway_station_building": {
-						"properties": {
-							"erd.diagram.state": {
-								"serialized": "<diagram version=\"1\" name=\"rzd_railway_station_building\" time=\"202008182318\"><entities><data-source id=\"postgres-jdbc-16ecab93252-4045234215140d72\"><entity id=\"1\" name=\"rzd_railway_station_building\" fq-name=\"russia.rzd_railway_station_building\" order=\"0\" color-bg=\"255,128,64\" x=\"20\" y=\"239\"><path name=\"russia\"/><path name=\"kbpvdb\"/></entity><entity id=\"2\" name=\"city_boundary\" fq-name=\"russia.city_boundary\" order=\"1\" x=\"462\" y=\"305\"><path name=\"russia\"/><path name=\"kbpvdb\"/></entity><entity id=\"3\" name=\"data_okn\" fq-name=\"index2019.data_okn\" order=\"2\" color-bg=\"204,192,184\" x=\"231\" y=\"445\"><path name=\"index2019\"/><path name=\"kbpvdb\"/></entity><entity id=\"4\" name=\"rzd_railway_station\" fq-name=\"russia.rzd_railway_station\" order=\"3\" x=\"237\" y=\"20\"><path name=\"russia\"/><path name=\"kbpvdb\"/></entity></data-source></entities><relations><relation name=\"fk_id_gis\" fq-name=\"russia.rzd_railway_station_building.fk_id_gis\" type=\"fk\" pk-ref=\"2\" fk-ref=\"1\"/><relation name=\"fk_id_gis\" fq-name=\"russia.rzd_railway_station.fk_id_gis\" type=\"fk\" pk-ref=\"2\" fk-ref=\"4\"/><relation name=\"fk_okn_native_id\" fq-name=\"russia.rzd_railway_station_building.fk_okn_native_id\" type=\"fk\" pk-ref=\"3\" fk-ref=\"1\"/><relation name=\"fk_station_id\" fq-name=\"russia.rzd_railway_station_building.fk_station_id\" type=\"fk\" pk-ref=\"4\" fk-ref=\"1\"/></relations></diagram>"
-							}
-						}
-					}
-				},
-				"tmp": {
-					":city.csv": {
-						"constraints": {
-							"VIRTUAL_PK": {
-								"type": "vpk",
-								"attributes": [
-									"id_gis"
-								]
-							}
-						}
-					},
-					":pop": {
-						"constraints": {
-							"VIRTUAL_PK": {
-								"type": "vpk",
-								"attributes": [
-									"﻿id_gis"
-								]
-							}
-						}
-					},
-					":tmp_rzd_svod": {
-						"constraints": {
-							"VIRTUAL_PK": {
-								"type": "vpk",
-								"useAllColumns": true
-							}
-						}
-					}
-				},
-				"veb_rf": {
-					":tram_stat": {
-						"constraints": {
-							"VIRTUAL_PK": {
-								"type": "vpk",
-								"attributes": [
-									"id_gis"
-								]
-							}
-						}
-					}
-				},
-				"cadastr2016": {
-					":border": {
-						"constraints": {
-							"VIRTUAL_PK": {
-								"type": "vpk",
-								"attributes": [
-									"id"
-								]
-							}
-						}
-					}
-				}
-			}
-		},
-		"sqlite_jdbc-17790516ca4-15040c2281f065b": {
-			":rubrics2": {
-				"constraints": {
-					"VIRTUAL_PK": {
-						"type": "vpk",
-						"useAllColumns": true
-					}
-				}
 			}
 		}
 	},

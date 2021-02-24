@@ -1,6 +1,6 @@
 set startTime=%time%
 :: Загрузка линейных водных объектов
-:: Время выполнения ~  мин.
+:: Время выполнения ~ 10 мин.
 :: todo - резать по границам городов, чтобы нормально присваивать id_gis
 :: todo - прогнать и замерить время проверить ссылки на wiki
  ogr2ogr ^
@@ -29,7 +29,7 @@ delete from russia.waterway_osm where st_isempty(geom) is true; ^
 alter table russia.waterway_osm add constraint fk_id_gis foreign key(id_gis) references russia.city(id_gis); ^
 create index on russia.waterway_osm using gist(geom);^
 update russia.waterway_osm b set id_gis = bn.id_gis from russia.city bn where st_within(b.geom, bn.geom); ^
-update russia.waterway_osm length_km = round((st_length(geom::geography) / 10000)::numeric, 2); ^
+update russia.waterway_osm set length_km = round((st_length(geom::geography) / 10000)::numeric, 2); ^
 /* Индексы */ ^
 create index on russia.waterway_osm(type); ^
 create index on russia.waterway_osm(id_gis); ^

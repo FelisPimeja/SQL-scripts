@@ -1,6 +1,6 @@
 set startTimeRoad=%time%
 :: Загрузка площадных водных объектов
-:: Время выполнения ~  ч.
+:: Время выполнения ~ 20 мин.
 :: todo - резать по границам городов, чтобы нормально присваивать id_gis
 :: todo - прогнать и замерить время проверить ссылки на wiki
  ogr2ogr ^
@@ -29,7 +29,7 @@ delete from russia.water_osm where st_isempty(geom) is true; ^
 alter table russia.water_osm add constraint fk_id_gis foreign key(id_gis) references russia.city(id_gis), add column area_ha numeric; ^
 create index on russia.water_osm using gist(geom);^
 update russia.water_osm b set id_gis=bn.id_gis from russia.city bn where st_within(b.geom, bn.geom); ^
-update russia.building_osm set area_ha = round((st_area(geom::geography) / 10000)::numeric, 2); ^
+update russia.water_osm set area_ha = round((st_area(geom::geography) / 10000)::numeric, 2); ^
 /* Индексы */ ^
 create index on russia.water_osm(type); ^
 create index on russia.water_osm(id_gis); ^
