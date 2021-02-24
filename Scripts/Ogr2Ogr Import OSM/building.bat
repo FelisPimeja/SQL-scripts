@@ -58,6 +58,11 @@ comment on column russia.building_osm.geom is 'Геометрия'; ^
 comment on column russia.building_osm.id_gis is 'id_gis города. Внешний ключ'; "
 
 
+<<<<<<< HEAD
 echo Загрузка Зданий Начало: %startTime%
 echo Загрузка Зданий Завершение: %time%
+=======
+echo Загрузка Дорог Начало: %startTime%
+echo Загрузка Дорог Завершение: %time%
+>>>>>>> branch 'master' of https://github.com/FelisPimeja/SQL-scripts.git
 
