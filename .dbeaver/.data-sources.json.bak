@@ -70,6 +70,74 @@
 				},
 				"auth-model": "native"
 			}
+		},
+		"postgres-jdbc-176fb53d362-3c5a22049cdf08e7": {
+			"provider": "postgresql",
+			"driver": "postgres-jdbc",
+			"name": "sdekbvector",
+			"save-password": true,
+			"show-system-objects": true,
+			"read-only": false,
+			"configuration": {
+				"host": "fme.strelkakb.ru",
+				"port": "5433",
+				"database": "sdekbvector",
+				"url": "jdbc:postgresql://fme.strelkakb.ru:5433/sdekbvector",
+				"home": "postgresql-x64-12",
+				"type": "dev",
+				"provider-properties": {
+					"@dbeaver-show-non-default-db@": "true",
+					"@dbeaver-show-template-db@": "false",
+					"@dbeaver-show-unavailable-db@": "false",
+					"postgresql.dd.plain.string": "false",
+					"postgresql.dd.tag.string": "false"
+				},
+				"auth-model": "native"
+			}
+		},
+		"sqlite_jdbc-1778864b6dd-72f2adf9817f8a57": {
+			"provider": "generic",
+			"driver": "sqlite_jdbc",
+			"name": "output_dev_08_02.gpkg",
+			"save-password": true,
+			"show-system-objects": true,
+			"read-only": false,
+			"configuration": {
+				"database": "P:\\GIS\\temp\\ST\\Яндекс_2020\\output_dev_08_02.gpkg",
+				"url": "jdbc:sqlite:P:\\GIS\\temp\\ST\\Яндекс_2020\\output_dev_08_02.gpkg",
+				"type": "dev",
+				"auth-model": "native"
+			}
+		},
+		"sqlite_jdbc-17790516ca4-15040c2281f065b": {
+			"provider": "generic",
+			"driver": "sqlite_jdbc",
+			"name": "input_dev3.gpkg",
+			"save-password": true,
+			"show-system-objects": true,
+			"read-only": false,
+			"configuration": {
+				"database": "P:\\GIS\\Tools\\FME\\Yandex\\input_dev3.gpkg",
+				"url": "jdbc:sqlite:P:\\GIS\\Tools\\FME\\Yandex\\input_dev3.gpkg",
+				"type": "dev",
+				"auth-model": "native",
+				"handlers": {}
+			}
+		},
+		"sqlite_jdbc-17790885221-7dd22febdcf566d0": {
+			"provider": "generic",
+			"driver": "sqlite_jdbc",
+			"name": "output_dev3_1.gpkg",
+			"save-password": true,
+			"show-system-objects": true,
+			"read-only": false,
+			"configuration": {
+				"database": "P:\\GIS\\Tools\\FME\\Yandex\\output_dev3_1.gpkg",
+				"url": "jdbc:sqlite:P:\\GIS\\Tools\\FME\\Yandex\\output_dev3_1.gpkg",
+				"type": "dev",
+				"auth-model": "native",
+				"handlers": {}
+			}
 		}
 	},
 	"virtual-models": {
@@ -107,6 +175,14 @@
 								]
 							}
 						}
+					},
+					":tmp_rzd_svod": {
+						"constraints": {
+							"VIRTUAL_PK": {
+								"type": "vpk",
+								"useAllColumns": true
+							}
+						}
 					}
 				},
 				"veb_rf": {
@@ -131,6 +207,23 @@
 								]
 							}
 						}
+					}
+				},
+				"index2020": {
+					"@properties": {
+						"erd.diagram.state": {
+							"serialized": "<diagram version=\"1\" name=\"index2020\" time=\"202102151719\"><entities><data-source id=\"postgres-jdbc-174605c68d9-248a2ec40405f45d\"><entity id=\"1\" name=\"data_boundary\" fq-name=\"index2020.data_boundary\" order=\"0\" x=\"178\" y=\"228\"><path name=\"index2020\"/><path name=\"kbpvdb\"/></entity><entity id=\"2\" name=\"data_poi\" fq-name=\"index2020.data_poi\" order=\"1\" x=\"20\" y=\"20\"><path name=\"index2020\"/><path name=\"kbpvdb\"/></entity><entity id=\"3\" name=\"data_pop_rosstat\" fq-name=\"index2020.data_pop_rosstat\" order=\"2\" x=\"20\" y=\"314\"><path name=\"index2020\"/><path name=\"kbpvdb\"/></entity></data-source></entities><relations><relation name=\"id_gis_fk\" fq-name=\"index2020.data_poi.id_gis_fk\" type=\"fk\" pk-ref=\"1\" fk-ref=\"2\"/><relation name=\"id_gis_fk\" fq-name=\"index2020.data_pop_rosstat.id_gis_fk\" type=\"fk\" pk-ref=\"1\" fk-ref=\"3\"/></relations></diagram>"
+						}
+					}
+				}
+			}
+		},
+		"sqlite_jdbc-17790516ca4-15040c2281f065b": {
+			":rubrics2": {
+				"constraints": {
+					"VIRTUAL_PK": {
+						"type": "vpk",
+						"useAllColumns": true
 					}
 				}
 			}

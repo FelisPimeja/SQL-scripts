@@ -711,6 +711,7 @@ order by rubr
 
 -- Подсчёт площади и протяжённости промтерриторий у воды на 14 городов
 
+-- Выбираем всю площадную воду в городах по списку 
 drop table if exists water; 
 create temp table water as 
 	select w.*, c.id_gis, c.city
@@ -735,9 +736,10 @@ create temp table water as
 		'Астрахань'
 	)
 ;
-
 create index on water using gist(geom);
 drop table if exists rivers; 
+
+-- Выбираем нужные линейные реки в городах по списку
 create temp table rivers as
 	select w.*, c.id_gis, c.city
 	from russia.city c
@@ -764,6 +766,7 @@ create temp table rivers as
 ;
 create index on rivers using gist(geom);
 
+-- Выбираем всю площадную воду пересекающуюся с линейными реками
 drop table if exists waterareas; 
 create temp table waterareas as
 	select distinct on (w.geom)
@@ -775,6 +778,7 @@ create temp table waterareas as
 create index on waterareas using gist(geom);
 create index on waterareas using gist((geom::geography));
 
+-- Выбираем все промтерритории в городах по списку 
 drop table if exists industrial; 
 create temp table industrial as 
 	select l.*, c.id_gis
@@ -808,6 +812,7 @@ create temp table industrial as
 create index on industrial using gist(geom);
 create index on industrial using gist((geom::geography));
 
+-- Выбираем промтерритории в радиусе 25 м от воды
 drop table if exists w_industrial; 
 create temp table w_industrial as 
 	select i.*, w.city
@@ -821,6 +826,7 @@ create index on w_industrial using gist((geom::geography));
 drop table if exists tmp.shore_industrial; 
 create table tmp.shore_industrial as 
 
+-- Считаем статистику по прому (суммарная площадь, + протяжённость береговой линии через пересечение буфера от прома и контура площадной воды) 
 with dis_w as (
 	select id_gis, ST_Boundary(st_union(geom)) geom, st_union(geom) u_geom 
 	from waterareas
