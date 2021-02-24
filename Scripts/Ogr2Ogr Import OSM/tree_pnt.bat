@@ -1,6 +1,6 @@
 set startTime=%time%
 :: Загрузка точечных деревьев
-:: Время выполнения ~  мин.
+:: Время выполнения ~ 7 мин.
 :: todo - прогнать и замерить время проверить ссылки на wiki
  ogr2ogr ^
  -f PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
@@ -40,5 +40,5 @@ comment on column russia.tree_pnt_osm.geom is 'Геометрия'; ^
 comment on column russia.tree_pnt_osm.id_gis is 'id_gis города. Внешний ключ';"
 
 
-echo Загрузка Дорог Начало: %startTime%
-echo Загрузка Дорог Завершение: %time%
+echo Загрузка Точечных деревьев Начало: %startTime%
+echo Загрузка Точечных деревьев Завершение: %time%

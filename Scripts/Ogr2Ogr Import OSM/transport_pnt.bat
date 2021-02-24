@@ -1,6 +1,6 @@
 set startTime=%time%
 :: Загрузка точечных объектов транспортной инфраструктуры
-:: Время выполнения ~  мин.
+:: Время выполнения ~ 4 мин.
 :: todo - прогнать и замерить время проверить ссылки на wiki
  ogr2ogr ^
  -f PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
@@ -42,5 +42,5 @@ comment on column russia.transport_pnt_osm.geom is 'Геометрия'; ^
 comment on column russia.transport_pnt_osm.id_gis is 'id_gis города. Внешний ключ';"
 
 
-echo Загрузка Дорог Начало: %startTime%
-echo Загрузка Дорог Завершение: %time%
+echo Загрузка точечных объектов транспортной инфраструктуры Начало: %startTime%
+echo Загрузка точечных объектов транспортной инфраструктуры Завершение: %time%

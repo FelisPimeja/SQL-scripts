@@ -48,6 +48,6 @@ comment on column russia.water_osm.geom is 'Геометрия';^
 comment on column russia.water_osm.id_gis is 'id_gis города. Внешний ключ';"
 
 
-echo Загрузка Дорог Начало: %startTimeRoad%
-echo Загрузка Дорог Завершение: %time%
+echo Загрузка площадных водных объектов Начало: %startTimeRoad%
+echo Загрузка площадных водных объектов Завершение: %time%
 

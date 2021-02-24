@@ -48,5 +48,5 @@ comment on column russia.waterway_osm.geom is 'Геометрия'; ^
 comment on column russia.waterway_osm.id_gis is 'id_gis города. Внешний ключ';"
 
 
-echo Загрузка Дорог Начало: %startTime%
-echo Загрузка Дорог Завершение: %time%
+echo Загрузка линейных водных объектов Начало: %startTime%
+echo Загрузка линейных водных объектов Завершение: %time%

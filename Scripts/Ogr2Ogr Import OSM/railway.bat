@@ -1,6 +1,6 @@
 set startTime=%time%
 :: Загрузка железных дорог
-:: Время выполнения ~  мин.
+:: Время выполнения ~ 5 мин.
 :: todo - резать по границам городов, чтобы нормально присваивать id_gis
 :: todo - прогнать и замерить время проверить ссылки на wiki
  ogr2ogr ^
@@ -26,7 +26,7 @@ ogr2ogr ^
 "/* Проверка геометрии, id_gis и площади */ ^
 update russia.railway_osm set geom = st_collectionextract(st_makevalid(st_removerepeatedpoints(st_snaptogrid(geom, 0.0000001))), 2); ^
 delete from russia.railway_osm where st_isempty(geom) is true; ^
-alter table russia.railway_osm add column id_gis smallint, add constraint fk_id_gis foreign key(id_gis) references russia.city(id_gis); ^
+alter table russia.railway_osm add constraint fk_id_gis foreign key(id_gis) references russia.city(id_gis); ^
 create index on russia.railway_osm using gist(geom);^
 update russia.railway_osm b set id_gis = bn.id_gis from russia.city bn where st_within(b.geom, bn.geom); ^
 /* Индексы */ ^
@@ -47,5 +47,5 @@ comment on column russia.railway_osm.geom is 'Геометрия';^
 comment on column russia.railway_osm.id_gis is 'id_gis города. Внешний ключ';"
 
 
-echo Загрузка Дорог Начало: %startTime%
-echo Загрузка Дорог Завершение: %time%
+echo Загрузка железных дорог Начало: %startTime%
+echo Загрузка железных дорог Завершение: %time%

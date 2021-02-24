@@ -208,13 +208,6 @@
 							}
 						}
 					}
-				},
-				"index2020": {
-					"@properties": {
-						"erd.diagram.state": {
-							"serialized": "<diagram version=\"1\" name=\"index2020\" time=\"202102151719\"><entities><data-source id=\"postgres-jdbc-174605c68d9-248a2ec40405f45d\"><entity id=\"1\" name=\"data_boundary\" fq-name=\"index2020.data_boundary\" order=\"0\" x=\"178\" y=\"228\"><path name=\"index2020\"/><path name=\"kbpvdb\"/></entity><entity id=\"2\" name=\"data_poi\" fq-name=\"index2020.data_poi\" order=\"1\" x=\"20\" y=\"20\"><path name=\"index2020\"/><path name=\"kbpvdb\"/></entity><entity id=\"3\" name=\"data_pop_rosstat\" fq-name=\"index2020.data_pop_rosstat\" order=\"2\" x=\"20\" y=\"314\"><path name=\"index2020\"/><path name=\"kbpvdb\"/></entity></data-source></entities><relations><relation name=\"id_gis_fk\" fq-name=\"index2020.data_poi.id_gis_fk\" type=\"fk\" pk-ref=\"1\" fk-ref=\"2\"/><relation name=\"id_gis_fk\" fq-name=\"index2020.data_pop_rosstat.id_gis_fk\" type=\"fk\" pk-ref=\"1\" fk-ref=\"3\"/></relations></diagram>"
-						}
-					}
 				}
 			}
 		},

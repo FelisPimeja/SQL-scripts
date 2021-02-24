@@ -1,6 +1,6 @@
 set startTime=%time%
 :: Загрузка линейных преград
-:: Время выполнения ~  мин.
+:: Время выполнения ~ 12 мин.
 :: todo - резать по границам городов, чтобы нормально присваивать id_gis
 :: todo - прогнать и замерить время проверить ссылки на wiki
  ogr2ogr ^
@@ -43,5 +43,5 @@ comment on column russia.barrier_osm.geom is 'Геометрия'; ^
 comment on column russia.barrier_osm.id_gis is 'id_gis города. Внешний ключ';"
 
 
-echo Загрузка Дорог Начало: %startTime%
-echo Загрузка Дорог Завершение: %time%
+echo Загрузка линейных преград Начало: %startTime%
+echo Загрузка линейных преград Завершение: %time%
