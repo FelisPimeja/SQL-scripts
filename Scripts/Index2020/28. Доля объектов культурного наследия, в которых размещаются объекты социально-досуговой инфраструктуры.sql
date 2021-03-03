@@ -169,6 +169,7 @@ comment on column index2020.comp_i28.higher_value is 'В каком году показатель "Д
 
 
 /* Вывод в Excel */
+/* Сводная таблица сравнения с прошлогодними результатами */
 select 
 	id_gis "id_gis города",
 	city "Город",
@@ -181,3 +182,26 @@ select
 	okn_poi_percent_all_2020 "% ОКН + СДЗ 2020",
 	case when higher_value is null then 'Поровну' else higher_value::text end "В каком году больше"
 from index2020.comp_i28;
+
+
+/* Вывод списка новых ОКН */
+with okn as (
+	select o1.*
+	from index2020.data_okn o1
+	left join index2019.data_okn o2 using(nativeid)
+	where o2.nativeid is null 
+		and o1.nativeid is not null
+		and o1.id_gis is not null
+)
+select
+	o.id,
+	o.id_gis,
+	b.city "Город",
+	b.region_name "Субъект РФ",
+	o.nativename "Название",
+	o.nativeid "nativeid из Реестра ОКН",
+	o.general_regnumber "general_regnumber из Реестра ОКН",
+	o.general_createdate "general_createdate из Реестра ОКН"
+from okn o
+left join index2020.data_boundary b using(id_gis);
+
