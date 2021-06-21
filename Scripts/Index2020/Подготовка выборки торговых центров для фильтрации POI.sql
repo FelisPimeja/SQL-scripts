@@ -1,21 +1,21 @@
-/* Подготовка слоя с торговыми центрами по точкам Яндекса и полигонам зданий из OpenStreetMap */
-/* Время выполнения ~ 2 мин. */
+/* РџРѕРґРіРѕС‚РѕРІРєР° СЃР»РѕСЏ СЃ С‚РѕСЂРіРѕРІС‹РјРё С†РµРЅС‚СЂР°РјРё РїРѕ С‚РѕС‡РєР°Рј РЇРЅРґРµРєСЃР° Рё РїРѕР»РёРіРѕРЅР°Рј Р·РґР°РЅРёР№ РёР· OpenStreetMap */
+/* Р’СЂРµРјСЏ РІС‹РїРѕР»РЅРµРЅРёСЏ ~ 2 РјРёРЅ. */
 drop table if exists index2020.data_mall;
 create table index2020.data_mall as
 select distinct on(b.id) b.*
 from russia.poi_yandex_2020 p
 join index2020.data_building b
 	on st_intersects(b.geom, p.geom)
-where p.category_name like '%Торговый центр%'
+where p.category_name like '%РўРѕСЂРіРѕРІС‹Р№ С†РµРЅС‚СЂ%'
 ;
-/* Индексы и первичный ключ */
+/* РРЅРґРµРєСЃС‹ Рё РїРµСЂРІРёС‡РЅС‹Р№ РєР»СЋС‡ */
 alter table index2020.data_mall add primary key(id);
 create index on index2020.data_mall(id_gis);
 create index on index2020.data_mall using gist(geom);
 create index on index2020.data_mall using gist((geom::geography))
 ;
-/* Комментарии */
+/* РљРѕРјРјРµРЅС‚Р°СЂРёРё */
 comment on table index2020.data_mall is
-'Торговые центры в границах городов РФ.
-Источники -  OpenStreetMap, Яндекс.
-Актуальность - март 2021 г.';
+'РўРѕСЂРіРѕРІС‹Рµ С†РµРЅС‚СЂС‹ РІ РіСЂР°РЅРёС†Р°С… РіРѕСЂРѕРґРѕРІ Р Р¤.
+РСЃС‚РѕС‡РЅРёРєРё -  OpenStreetMap, РЇРЅРґРµРєСЃ.
+РђРєС‚СѓР°Р»СЊРЅРѕСЃС‚СЊ - РјР°СЂС‚ 2021 Рі.';

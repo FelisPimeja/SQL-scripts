@@ -1,10 +1,9 @@
-/* Расчёт WalkScore на данных Яндекса и доп слое "благокстроенного озеленения" из состава индекса 2019 */
-/* Время расчёта 211 часов на данных 2019 г. */
+/* Расчёт WalkScore на данных Яндекса и доп слое "благоустроенного озеленения" из состава индекса 2020 */
+/* Время расчёта 11,5 часов на данных 2020 г. */
 /* Фильтрация по id_gis */
 drop table if exists city;
 create temp table city as
 select id_gis from russia.city
---where id_gis <= 2000  --дебаг
 ;
 create index on city(id_gis);
 
@@ -13,7 +12,7 @@ drop table if exists poi;
 create temp table poi as
 select --distinct on (p.company_id) -- По идее дубликаты рубрик мёрджить не нужно!!!
 --	(row_number() over())::int id,
-	p.geom,
+	p.geom::geography geog,
 	p.name, 
 	p.id_gis,
 	p.category,
@@ -45,26 +44,28 @@ select --distinct on (p.company_id) -- По идее дубликаты рубр
 		) then 15::smallint
 	end wlk_ind
 from city c
-left join index2019.data_poi p using(id_gis);
+left join index2020.data_poi p using(id_gis);
 
--- Добавляем точки точки зелёных насаждений общего пользования из контуров "благоустроенного озеленения" из состава Индекса качества городской среды 2019
-insert into poi (id_gis, geom, wlk_ind)
+-- Добавляем точки точки зелёных насаждений общего пользования из контуров "благоустроенного озеленения" из состава Индекса качества городской среды 2020
+insert into poi (id_gis, geog, wlk_ind)
 select
 	g.id_gis,
-	(st_dumppoints(g.geom)).geom::geometry(point, 4326) geom,
+	(st_dumppoints(g.geom)).geom::geometry::geography geog,
 	13::smallint wlk_ind
 from city c
-left join index2019.data_greenery g using (id_gis);
+left join index2020.data_greenery g using (id_gis);
 
 -- Индексы
 alter table poi add column id serial primary key;
 create index on poi(id_gis);
 create index on poi(wlk_ind);
-create index on poi using gist(geom);
-create index on poi using gist((geom::geography));
+create index on poi using gist(geog);
 
---drop table if exists walkscore.poi_t;
---create table walkscore.poi_t as select * from poi;
+
+drop table if exists hex_grid;
+create temp table hex_grid as select id, id_gis, st_centroid(geom)::geography geog from  index2020.data_hexgrid where id_gis in (select * from city);
+create index on hex_grid(id_gis);
+create index on hex_grid using gist(geog);
 
 
 /* Расчёт WalkScore */
@@ -72,221 +73,124 @@ create index on poi using gist((geom::geography));
 drop table if exists sc;
 create temp table sc as 
 --explain
+with d1 as (
+    select
+        g.id,
+        min(st_distance(g.geog, p.geog)) filter(where p.wlk_ind =  1) kind, --  800
+        min(st_distance(g.geog, p.geog)) filter(where p.wlk_ind =  2) schl, -- 1000
+        min(st_distance(g.geog, p.geog)) filter(where p.wlk_ind =  3) univ, -- 1200
+        min(st_distance(g.geog, p.geog)) filter(where p.wlk_ind =  4) food, -- 1200
+        min(st_distance(g.geog, p.geog)) filter(where p.wlk_ind =  5) shop, --  800
+        min(st_distance(g.geog, p.geog)) filter(where p.wlk_ind =  6) heal, -- 1000
+        min(st_distance(g.geog, p.geog)) filter(where p.wlk_ind =  7) fast, --  800
+        min(st_distance(g.geog, p.geog)) filter(where p.wlk_ind =  8) cafe, -- 1000
+        min(st_distance(g.geog, p.geog)) filter(where p.wlk_ind =  9) rest, -- 1200
+        min(st_distance(g.geog, p.geog)) filter(where p.wlk_ind = 10) cine, -- 1600
+        min(st_distance(g.geog, p.geog)) filter(where p.wlk_ind = 11) thea, -- 1400
+        min(st_distance(g.geog, p.geog)) filter(where p.wlk_ind = 12) entr, -- 1200
+        min(st_distance(g.geog, p.geog)) filter(where p.wlk_ind = 13) park, -- 1200
+        min(st_distance(g.geog, p.geog)) filter(where p.wlk_ind = 14) bibl, -- 1400
+        min(st_distance(g.geog, p.geog)) filter(where p.wlk_ind = 15) fitn  -- 1200 
+    from hex_grid g
+    left join poi p
+        on g.id_gis = p.id_gis
+            and st_dwithin(g.geog, p.geog, 1600)
+    group by g.id, g.id_gis
+)
 select
-	g.id,
-	case
-        when p1.dist < 200 then 100
-        when p1.dist > 199 and p1.dist < 400 then 100 - (p1.dist - 200) / 4
-        when p1.dist > 399 and p1.dist < 800 then  50 - (p1.dist - 400) / 8
+	d1.id,
+    case
+        when kind < 200 then 100
+        when kind > 199 and kind <  400 then 100 - (kind - 200) /  4
+        when kind > 399 and kind <  800 then  50 - (kind - 400) /  8
         else 0
     end kind,
 	case
-        when p2.dist < 300 then 100
-        when p2.dist > 299 and p2.dist <  500 then 100 - (p2.dist - 300) /  4
-        when p2.dist > 499 and p2.dist < 1000 then  50 - (p2.dist - 500) / 10
+        when schl < 300 then 100
+        when schl > 299 and schl <  500 then 100 - (schl - 300) /  4
+        when schl > 499 and schl < 1000 then  50 - (schl - 500) / 10
         else 0
     end schl,
 	case
-        when p3.dist < 400 then 100
-        when p3.dist > 399 and p3.dist <  800 then 100 - (p3.dist - 400) / 8
-        when p3.dist > 799 and p3.dist < 1200 then  50 - (p3.dist - 800) / 8
+        when univ < 400 then 100
+        when univ > 399 and univ <  800 then 100 - (univ - 400) /  8
+        when univ > 799 and univ < 1200 then  50 - (univ - 800) /  8
         else 0
     end univ,
 	case
-        when p4.dist < 400 then 100
-        when p4.dist > 399 and p4.dist <  600 then 100 - (p4.dist - 400) /  4
-        when p4.dist > 599 and p4.dist < 1200 then  50 - (p4.dist - 600) / 12
+        when food < 400 then 100
+        when food > 399 and food <  600 then 100 - (food - 400) /  4
+        when food > 599 and food < 1200 then  50 - (food - 600) / 12
         else 0
     end food,
 	case
-        when p5.dist < 200 then 100
-        when p5.dist > 199 and p5.dist < 400 then 100 - (p5.dist - 200) / 4
-        when p5.dist > 399 and p5.dist < 800 then  50 - (p5.dist - 400) / 8
+        when shop < 200 then 100
+        when shop > 199 and shop <  400 then 100 - (shop - 200) /  4
+        when shop > 399 and shop <  800 then  50 - (shop - 400) /  8
         else 0
     end shop,
 	case
-        when p6.dist < 300 then 100
-        when p6.dist > 299 and p6.dist <  500 then 100 - (p6.dist - 300) /  4
-        when p6.dist > 499 and p6.dist < 1000 then  50 - (p6.dist - 500) / 10
+        when heal < 300 then 100
+        when heal > 299 and heal <  500 then 100 - (heal - 300) /  4
+        when heal > 499 and heal < 1000 then  50 - (heal - 500) / 10
         else 0
     end heal,
 	case
-        when p7.dist < 200 then 100
-        when p7.dist > 199 and p7.dist < 400 then 100 - (p7.dist - 200) / 4
-        when p7.dist > 399 and p7.dist < 800 then  50 - (p7.dist - 400) / 8
+        when fast < 200 then 100
+        when fast > 199 and fast <  400 then 100 - (fast - 200) /  4
+        when fast > 399 and fast <  800 then  50 - (fast - 400) /  8
         else 0
     end fast,
 	case
-        when p8.dist < 300 then 100
-        when p8.dist > 299 and p8.dist <  500 then 100 - (p8.dist - 300) /  4
-        when p8.dist > 499 and p8.dist < 1000 then  50 - (p8.dist - 500) / 10
+        when cafe < 300 then 100
+        when cafe > 299 and cafe <  500 then 100 - (cafe - 300) /  4
+        when cafe > 499 and cafe < 1000 then  50 - (cafe - 500) / 10
         else 0
     end cafe,
 	case
-        when p9.dist < 400 then 100
-        when p9.dist > 399 and p9.dist <  600 then 100 - (p9.dist - 400) /  4
-        when p9.dist > 599 and p9.dist < 1200 then  50 - (p9.dist - 600) / 12
+        when rest < 400 then 100
+        when rest > 399 and rest <  600 then 100 - (rest - 400) /  4
+        when rest > 599 and rest < 1200 then  50 - (rest - 600) / 12
         else 0
     end rest,
 	case
-        when p10.dist < 600 then 100
-        when p10.dist > 599 and p10.dist <  800 then 100 - (p10.dist - 600) /  4
-        when p10.dist > 799 and p10.dist < 1600 then  50 - (p10.dist - 800) / 16
+        when cine < 600 then 100
+        when cine > 599 and cine <  800 then 100 - (cine - 600) /  4
+        when cine > 799 and cine < 1600 then  50 - (cine - 800) / 16
         else 0
     end cine,
 	case
-        when p11.dist < 500 then 100
-        when p11.dist > 499 and p11.dist <  700 then 100 - (p11.dist - 500) /  4
-        when p11.dist > 699 and p11.dist < 1400 then  50 - (p11.dist - 700) / 14
+        when thea < 500 then 100
+        when thea > 499 and thea <  700 then 100 - (thea - 500) /  4
+        when thea > 699 and thea < 1400 then  50 - (thea - 700) / 14
         else 0
     end thea,
 	case
-        when p12.dist < 400 then 100
-        when p12.dist > 399 and p12.dist <  600 then 100 - (p12.dist - 400) /  4
-        when p12.dist > 599 and p12.dist < 1200 then  50 - (p12.dist - 600) / 12
+        when entr < 400 then 100
+        when entr > 399 and entr <  600 then 100 - (entr - 400) /  4
+        when entr > 599 and entr < 1200 then  50 - (entr - 600) / 12
         else 0
     end entr,
 	case
-        when p13.dist < 400 then 100
-        when p13.dist > 399 and p13.dist < 600 then 100 - (p13.dist - 400) /  4
-        when p13.dist > 599 and p13.dist < 1200 then 50 - (p13.dist - 600) / 12
+        when park < 400 then 100
+        when park > 399 and park <  600 then 100 - (park - 400) /  4
+        when park > 599 and park < 1200 then  50 - (park - 600) / 12
         else 0
     end park,
 	case
-        when p14.dist < 500 then 100
-        when p14.dist > 499 and p14.dist <  700 then 100 - (p14.dist - 500) /  4
-        when p14.dist > 699 and p14.dist < 1400 then  50 - (p14.dist - 700) / 14
+        when bibl < 500 then 100
+        when bibl > 499 and bibl <  700 then 100 - (bibl - 500) /  4
+        when bibl > 699 and bibl < 1400 then  50 - (bibl - 700) / 14
         else 0
     end bibl,
 	case
-        when p15.dist < 400 then 100
-        when p15.dist > 399 and p15.dist <  600 then 100 - (p15.dist - 400) /  4
-        when p15.dist > 599 and p15.dist < 1200 then  50 - (p15.dist - 600) / 12
+        when fitn < 400 then 100
+        when fitn > 399 and fitn <  600 then 100 - (fitn - 400) /  4
+        when fitn > 599 and fitn < 1200 then  50 - (fitn - 600) / 12
         else 0
     end fitn
-from city c
-left join index2019.data_hexgrid g using(id_gis)
-left join lateral (
-    select st_distance(st_centroid(g.geom)::geography, p.geom::geography, true) dist
-    from poi p
-    where p.wlk_ind = 1 and p.id_gis = g.id_gis
-		and st_dwithin(st_centroid(g.geom)::geography, p.geom::geography, 800, true)
-    order by st_centroid(g.geom)::geography <-> p.geom::geography
-    limit 1
-) p1 on true
-left join lateral (
-    select st_distance(st_centroid(g.geom)::geography, p.geom::geography, true) dist
-    from poi p
-    where p.wlk_ind = 2 and p.id_gis = g.id_gis
-		and st_dwithin(st_centroid(g.geom)::geography, p.geom::geography, 1000, true)
-    order by st_centroid(g.geom)::geography <-> p.geom::geography
-    limit 1
-    ) p2 on true
-left join lateral (
-    select st_distance(st_centroid(g.geom)::geography, p.geom::geography, true) dist
-    from poi p
-    where p.wlk_ind = 3 and p.id_gis = g.id_gis
-		and st_dwithin(st_centroid(g.geom)::geography, p.geom::geography, 1200, true)
-    order by st_centroid(g.geom)::geography <-> p.geom::geography
-    limit 1
-    ) p3 on true
-left join lateral (
-    select st_distance(st_centroid(g.geom)::geography, p.geom::geography, true) dist
-    from poi p
-    where p.wlk_ind = 4 and p.id_gis = g.id_gis
-		and st_dwithin(st_centroid(g.geom)::geography, p.geom::geography, 1200, true)
-    order by st_centroid(g.geom)::geography <-> p.geom::geography
-    limit 1
-    ) p4 on true
-left join lateral (
-    select st_distance(st_centroid(g.geom)::geography, p.geom::geography, true) dist
-    from poi p
-    where p.wlk_ind = 5 and p.id_gis = g.id_gis
-		and st_dwithin(st_centroid(g.geom)::geography, p.geom::geography, 800, true)
-    order by st_centroid(g.geom)::geography <-> p.geom::geography
-    limit 1
-    ) p5 on true
-left join lateral (
-    select st_distance(st_centroid(g.geom)::geography, p.geom::geography, true) dist
-    from poi p
-    where p.wlk_ind = 6 and p.id_gis = g.id_gis
-		and st_dwithin(st_centroid(g.geom)::geography, p.geom::geography, 1000, true)
-    order by st_centroid(g.geom)::geography <-> p.geom::geography
-    limit 1
-    ) p6 on true
-left join lateral (
-    select st_distance(st_centroid(g.geom)::geography, p.geom::geography, true) dist
-    from poi p
-    where p.wlk_ind = 7 and p.id_gis = g.id_gis
-		and st_dwithin(st_centroid(g.geom)::geography, p.geom::geography, 800, true)
-    order by st_centroid(g.geom)::geography <-> p.geom::geography
-    limit 1
-    ) p7 on true
-left join lateral (
-    select st_distance(st_centroid(g.geom)::geography, p.geom::geography, true) dist
-    from poi p
-    where p.wlk_ind = 8 and p.id_gis = g.id_gis
-		and st_dwithin(st_centroid(g.geom)::geography, p.geom::geography, 1000, true)
-    order by st_centroid(g.geom)::geography <-> p.geom::geography
-    limit 1
-    ) p8 on true
-left join lateral (
-    select st_distance(st_centroid(g.geom)::geography, p.geom::geography, true) dist
-    from poi p
-    where p.wlk_ind = 9 and p.id_gis = g.id_gis
-		and st_dwithin(st_centroid(g.geom)::geography, p.geom::geography, 1200, true)
-    order by st_centroid(g.geom)::geography <-> p.geom::geography
-    limit 1
-    ) p9 on true
-left join lateral (
-    select st_distance(st_centroid(g.geom)::geography, p.geom::geography, true) dist
-    from poi p
-    where p.wlk_ind = 10 and p.id_gis = g.id_gis
-		and st_dwithin(st_centroid(g.geom)::geography, p.geom::geography, 1600, true)
-    order by st_centroid(g.geom)::geography <-> p.geom::geography
-    limit 1
-    ) p10 on true
-left join lateral (
-    select st_distance(st_centroid(g.geom)::geography, p.geom::geography, true) dist
-    from poi p
-    where p.wlk_ind = 11 and p.id_gis = g.id_gis
-		and st_dwithin(st_centroid(g.geom)::geography, p.geom::geography, 1400, true)
-    order by st_centroid(g.geom)::geography <-> p.geom::geography
-    limit 1
-    ) p11 on true
-left join lateral (
-    select st_distance(st_centroid(g.geom)::geography, p.geom::geography, true) dist
-    from poi p
-    where p.wlk_ind = 12 and p.id_gis = g.id_gis
-		and st_dwithin(st_centroid(g.geom)::geography, p.geom::geography, 1200, true)
-    order by st_centroid(g.geom)::geography <-> p.geom::geography
-    limit 1
-    ) p12 on true
-left join lateral (
-    select st_distance(st_centroid(g.geom)::geography, p.geom::geography, true) dist
-    from poi p
-    where p.wlk_ind = 13 and p.id_gis = g.id_gis
-		and st_dwithin(st_centroid(g.geom)::geography, p.geom::geography, 1200, true)
-    order by st_centroid(g.geom)::geography <-> p.geom::geography
-    limit 1
-    ) p13 on true
-left join lateral (
-    select st_distance(st_centroid(g.geom)::geography, p.geom::geography, true) dist
-    from poi p
-    where p.wlk_ind = 14 and p.id_gis = g.id_gis
-		and st_dwithin(st_centroid(g.geom)::geography, p.geom::geography, 1400, true)
-    order by st_centroid(g.geom)::geography <-> p.geom::geography
-    limit 1
-    ) p14 on true
-left join lateral (
-	select st_distance(st_centroid(g.geom)::geography, p.geom::geography, true) dist
-	from poi p
-	where p.wlk_ind = 15 and p.id_gis = g.id_gis
-		and st_dwithin(st_centroid(g.geom)::geography, p.geom::geography, 1200, true)
-	order by st_centroid(g.geom)::geography <-> p.geom::geography
-	limit 1
-) p15 on true;
-
+from d1
+;
 -- Подсчёт средневзвешенных групповых значений индекса
 drop table if exists r0;
 create temp table r0 as 
@@ -343,7 +247,6 @@ select
     end r_5
 from sc;
 
---create index on index2019.data_hexgrid using gist((st_centroid(geom)::geography));
 
 -- Второй шаг взвешивания групп
 drop table if exists r1;
@@ -394,8 +297,8 @@ from r0
 join sc using(id);
 
 -- Расчёт итогового индекса WalkScore
-drop table if exists walkscore.walkscore2019;
-create table walkscore.walkscore2019 as
+drop table if exists walkscore.walkscore2020;
+create table walkscore.walkscore2020 as
 select
 	g.id,
 	g.id_gis::int2,
@@ -422,63 +325,68 @@ select
 	r1.r_5::int2,
 	((r_1+r_2+r_3+r_4+r_5)/5)::int2 r_all
 from city c
-left join index2019.data_hexgrid g using(id_gis)
+left join index2020.data_hexgrid g using(id_gis)
 left join sc using(id)
 left join r1 using(id);
 
 /* Первичный ключ и индексы*/
-alter table walkscore.walkscore2019 add primary key(id);
-create index on walkscore.walkscore2019 (id_gis);
-create index on walkscore.walkscore2019 (kind);
-create index on walkscore.walkscore2019 (schl);
-create index on walkscore.walkscore2019 (univ);
-create index on walkscore.walkscore2019 (food);
-create index on walkscore.walkscore2019 (shop);
-create index on walkscore.walkscore2019 (heal);
-create index on walkscore.walkscore2019 (fast);
-create index on walkscore.walkscore2019 (cafe);
-create index on walkscore.walkscore2019 (rest);
-create index on walkscore.walkscore2019 (cine);
-create index on walkscore.walkscore2019 (thea);
-create index on walkscore.walkscore2019 (entr);
-create index on walkscore.walkscore2019 (park);
-create index on walkscore.walkscore2019 (bibl);
-create index on walkscore.walkscore2019 (fitn);
-create index on walkscore.walkscore2019 (r_1);
-create index on walkscore.walkscore2019 (r_2);
-create index on walkscore.walkscore2019 (r_3);
-create index on walkscore.walkscore2019 (r_4);
-create index on walkscore.walkscore2019 (r_5);
-create index on walkscore.walkscore2019 (r_all);
-create index on walkscore.walkscore2019 using gist(geom);
+alter table walkscore.walkscore2020 add primary key(id);
+create index on walkscore.walkscore2020 (id_gis);
+create index on walkscore.walkscore2020 (kind);
+create index on walkscore.walkscore2020 (schl);
+create index on walkscore.walkscore2020 (univ);
+create index on walkscore.walkscore2020 (food);
+create index on walkscore.walkscore2020 (shop);
+create index on walkscore.walkscore2020 (heal);
+create index on walkscore.walkscore2020 (fast);
+create index on walkscore.walkscore2020 (cafe);
+create index on walkscore.walkscore2020 (rest);
+create index on walkscore.walkscore2020 (cine);
+create index on walkscore.walkscore2020 (thea);
+create index on walkscore.walkscore2020 (entr);
+create index on walkscore.walkscore2020 (park);
+create index on walkscore.walkscore2020 (bibl);
+create index on walkscore.walkscore2020 (fitn);
+create index on walkscore.walkscore2020 (r_1);
+create index on walkscore.walkscore2020 (r_2);
+create index on walkscore.walkscore2020 (r_3);
+create index on walkscore.walkscore2020 (r_4);
+create index on walkscore.walkscore2020 (r_5);
+create index on walkscore.walkscore2020 (r_all);
+create index on walkscore.walkscore2020 using gist(geom);
 --cluster walkscore.walkscore using walkscore_geom_idx; -- Ахтунг - кластеризация занимает 25 часов!!!
 
 /* Комментарии */
-comment on table walkscore.walkscore2019 is 'Индекс пешеходной доступности WalkScore посчитанный на данных Яндекс 2019 и гексагональной сетке 1 га, построенной для Индекса качества городской среды 2019';
-comment on column walkscore.walkscore2019.id is 'Первичный ключ';
-comment on column walkscore.walkscore2019.id_gis is 'id_gis города';
-comment on column walkscore.walkscore2019.kind is 'Уровень доступности детских садов в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.schl is 'Уровень доступности школ в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.univ is 'Уровень доступности высших учебных заведений в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.food is 'Уровень доступности продуктовых магазинов в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.shop is 'Уровень доступности непродуктовых магазинов в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.heal is 'Уровень доступности учреждений здравоохранения в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.fast is 'Уровень доступности предприятий быстрого питания в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.cafe is 'Уровень доступности кафе в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.rest is 'Уровень доступности ресторанов в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.cine is 'Уровень доступности кинотеатров в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.thea is 'Уровень доступности театров в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.entr is 'Уровень доступности развлекательных заведений в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.park is 'Уровень доступности парков и других зелёных зон в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.bibl is 'Уровень доступности библиотек в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.fitn is 'Уровень доступности фитнес центров и спортивных учреждений в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.r_1 is 'Средневзвешенный уровень доступности образования в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.r_2 is 'Средневзвешенный уровень доступности магазинов и здравоохранения в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.r_3 is 'Средневзвешенный уровень доступности общественного питания в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.r_4 is 'Средневзвешенный уровень доступности досуга и развлечений в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.r_5 is 'Средневзвешенный уровень доступности спорта и рекреации в баллах (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.r_all is 'Средневзвешенный уровень пешеходной доступности в баллах - итоговый WalkScore (больше - лучше, максимум 100 баллов)';
-comment on column walkscore.walkscore2019.geom is 'Геометрия - гексагональные ячейки';
+comment on table walkscore.walkscore2020 is 'Индекс пешеходной доступности WalkScore посчитанный на данных Яндекс 2020 и гексагональной сетке 1 га, построенной для Индекса качества городской среды 2020';
+comment on column walkscore.walkscore2020.id is 'Первичный ключ';
+comment on column walkscore.walkscore2020.id_gis is 'id_gis города';
+comment on column walkscore.walkscore2020.kind is 'Уровень доступности детских садов в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.schl is 'Уровень доступности школ в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.univ is 'Уровень доступности высших учебных заведений в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.food is 'Уровень доступности продуктовых магазинов в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.shop is 'Уровень доступности непродуктовых магазинов в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.heal is 'Уровень доступности учреждений здравоохранения в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.fast is 'Уровень доступности предприятий быстрого питания в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.cafe is 'Уровень доступности кафе в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.rest is 'Уровень доступности ресторанов в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.cine is 'Уровень доступности кинотеатров в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.thea is 'Уровень доступности театров в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.entr is 'Уровень доступности развлекательных заведений в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.park is 'Уровень доступности парков и других зелёных зон в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.bibl is 'Уровень доступности библиотек в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.fitn is 'Уровень доступности фитнес центров и спортивных учреждений в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.r_1 is 'Средневзвешенный уровень доступности образования в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.r_2 is 'Средневзвешенный уровень доступности магазинов и здравоохранения в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.r_3 is 'Средневзвешенный уровень доступности общественного питания в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.r_4 is 'Средневзвешенный уровень доступности досуга и развлечений в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.r_5 is 'Средневзвешенный уровень доступности спорта и рекреации в баллах (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.r_all is 'Средневзвешенный уровень пешеходной доступности в баллах - итоговый WalkScore (больше - лучше, максимум 100 баллов)';
+comment on column walkscore.walkscore2020.geom is 'Геометрия - гексагональные ячейки';
+
+--create table walkscore.poi as select * from poi;
+--create index on walkscore.poi(wlk_ind);
+--create index on walkscore.poi using gist(geog);
+
 
 
 

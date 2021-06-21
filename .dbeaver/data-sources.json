@@ -15,6 +15,7 @@
 				"url": "jdbc:postgresql://10.168.22.29:5433/kbpvdb",
 				"home": "postgresql-x64-12",
 				"type": "dev",
+				"keepAlive": 120,
 				"properties": {
 					"connectTimeout": "20",
 					"loginTimeout": "20"
@@ -27,7 +28,15 @@
 					"postgresql.dd.plain.string": "false",
 					"postgresql.dd.tag.string": "false"
 				},
-				"auth-model": "native"
+				"auth-model": "native",
+				"bootstrap": {
+					"defaultCatalog": "kbpvdb",
+					"defaultSchema": "public"
+				}
+			},
+			"custom-properties": {
+				"SQLEditor.outputPanel.autoShow": "false",
+				"gis.geometry.viewer.id": "browser"
 			}
 		},
 		"postgres-jdbc-177d442991a-5a9cfbd309dceafa": {
@@ -52,8 +61,118 @@
 					"postgresql.dd.plain.string": "false",
 					"postgresql.dd.tag.string": "false"
 				},
-				"auth-model": "native",
-				"handlers": {}
+				"auth-model": "native"
+			}
+		},
+		"postgres-jdbc-177f7cf51d5-77291ab47666c8e3": {
+			"provider": "postgresql",
+			"driver": "postgres-jdbc",
+			"name": "postgres",
+			"save-password": true,
+			"show-system-objects": true,
+			"read-only": false,
+			"configuration": {
+				"host": "localhost",
+				"port": "5432",
+				"database": "postgres",
+				"url": "jdbc:postgresql://localhost:5432/postgres",
+				"home": "postgresql-x64-12",
+				"type": "dev",
+				"provider-properties": {
+					"@dbeaver-show-non-default-db@": "false",
+					"@dbeaver-show-template-db@": "false",
+					"@dbeaver-show-unavailable-db@": "false",
+					"@dbeaver-read-all-data-types-db@": "false",
+					"postgresql.dd.plain.string": "false",
+					"postgresql.dd.tag.string": "false"
+				},
+				"auth-model": "native"
+			},
+			"custom-properties": {
+				"database.meta.separate.connection": "false"
+			}
+		},
+		"sqlite_jdbc-17801b6f843-1247adbdadf948c1": {
+			"provider": "generic",
+			"driver": "sqlite_jdbc",
+			"name": "output_dev_08_02.gpkg",
+			"save-password": true,
+			"show-system-objects": true,
+			"read-only": false,
+			"configuration": {
+				"database": "G:\\Tools\\FME\\Yandex\\output_dev_08_02.gpkg",
+				"url": "jdbc:sqlite:G:\\Tools\\FME\\Yandex\\output_dev_08_02.gpkg",
+				"type": "dev",
+				"auth-model": "native"
+			}
+		},
+		"postgres-jdbc-1781b258c8d-599347b500d0c930": {
+			"provider": "postgresql",
+			"driver": "postgres-jdbc",
+			"name": "pipe_photo",
+			"save-password": true,
+			"read-only": false,
+			"configuration": {
+				"host": "db01.cluster.strlk.ru",
+				"port": "5432",
+				"database": "pipe_photo",
+				"url": "jdbc:postgresql://db01.cluster.strlk.ru:5432/pipe_photo",
+				"home": "postgresql-x64-12",
+				"type": "dev",
+				"keepAlive": 120,
+				"provider-properties": {
+					"@dbeaver-show-non-default-db@": "true",
+					"@dbeaver-show-template-db@": "false",
+					"@dbeaver-show-unavailable-db@": "false",
+					"@dbeaver-read-all-data-types-db@": "true",
+					"postgresql.dd.plain.string": "false",
+					"postgresql.dd.tag.string": "false"
+				},
+				"auth-model": "native"
+			}
+		},
+		"postgres-jdbc-1790e538e7b-a5b65422b0e7c8a": {
+			"provider": "postgresql",
+			"driver": "postgres-jdbc",
+			"name": "fme.strelkakb.ru SDE",
+			"save-password": true,
+			"read-only": false,
+			"configuration": {
+				"host": "185.63.190.145",
+				"port": "5433",
+				"database": "postgres",
+				"url": "jdbc:postgresql://185.63.190.145:5433/postgres",
+				"home": "postgresql-x64-12",
+				"type": "dev",
+				"properties": {
+					"connectTimeout": "20",
+					"loginTimeout": "20"
+				},
+				"provider-properties": {
+					"@dbeaver-show-non-default-db@": "true",
+					"@dbeaver-show-template-db@": "false",
+					"@dbeaver-show-unavailable-db@": "false",
+					"@dbeaver-read-all-data-types-db@": "false",
+					"postgresql.dd.plain.string": "false",
+					"postgresql.dd.tag.string": "false"
+				},
+				"auth-model": "native"
+			}
+		}
+	},
+	"virtual-models": {
+		"postgres-jdbc-177d4409115-4a99032f61948284": {
+			"kbpvdb": {
+				"index2020": {
+					":stat_ndvi_bak": {
+						"constraints": {
+							"VIRTUAL_PK": {
+								"type": "vpk",
+								"useAllColumns": true
+							}
+						}
+					}
+				}
 			}
 		}
 	},
@@ -64,7 +183,8 @@
 			"description": "Regular development database",
 			"auto-commit": true,
 			"confirm-execute": false,
-			"confirm-data-change": false
+			"confirm-data-change": false,
+			"auto-close-transactions": false
 		}
 	}
 }

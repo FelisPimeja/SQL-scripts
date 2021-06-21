@@ -1,6 +1,6 @@
-/* Подготовка рубрик Яндекса (новый формат таблицы POI) */
-/* Время выполнения на данных 2020 г ~ 9 мин. */
-/* Разбираем рубрики из списка в отдельные строки */
+/* РџРѕРґРіРѕС‚РѕРІРєР° СЂСѓР±СЂРёРє РЇРЅРґРµРєСЃР° (РЅРѕРІС‹Р№ С„РѕСЂРјР°С‚ С‚Р°Р±Р»РёС†С‹ POI) */
+/* Р’СЂРµРјСЏ РІС‹РїРѕР»РЅРµРЅРёСЏ РЅР° РґР°РЅРЅС‹С… 2020 Рі ~ 10 РјРёРЅ. */
+/* Р Р°Р·Р±РёСЂР°РµРј СЂСѓР±СЂРёРєРё РёР· СЃРїРёСЃРєР° РІ РѕС‚РґРµР»СЊРЅС‹Рµ СЃС‚СЂРѕРєРё */
 drop table if exists poi1;
 create temp table poi1 as 
 select
@@ -12,12 +12,12 @@ select
 	category_name category_name,
 	replace(unnest(string_to_array(category_name, '","')), '"', '') distinct_cat
 from russia.poi_yandex_2020
-where id_gis is not null -- id_gis предварительно должны быть проставлены по последней версии границ!!!
+where id_gis is not null -- id_gis РїСЂРµРґРІР°СЂРёС‚РµР»СЊРЅРѕ РґРѕР»Р¶РЅС‹ Р±С‹С‚СЊ РїСЂРѕСЃС‚Р°РІР»РµРЅС‹ РїРѕ РїРѕСЃР»РµРґРЅРµР№ РІРµСЂСЃРёРё РіСЂР°РЅРёС†!!!
 --limit 1000000
 ;
-create index on poi1(distinct_cat)
-;
-/* Присваиваем старые значения рубрик */
+create index on poi1(distinct_cat);
+
+/* РџСЂРёСЃРІР°РёРІР°РµРј СЃС‚Р°СЂС‹Рµ Р·РЅР°С‡РµРЅРёСЏ СЂСѓР±СЂРёРє */
 drop table if exists poi2;
 create temp table poi2 as 
 select
@@ -26,8 +26,8 @@ select
 	p."name",
 	p.id_gis,
 	p.geom,
-	p.category_name,
-	r.rubrics_old category_old,
+	p.category_name category_new,
+	r.rubrics_old rubrics,
 	r.subrubrics,
 	r.category,
 	r.sdz,
@@ -63,11 +63,16 @@ group by
 	r.food,
 	r.services
 ;
-create index on poi2(category_old);
-;
-/* Агрегируем старые значения рубрик в список */
-drop table if exists index2020.data_poi;
-create table index2020.data_poi as 
+create index on poi2(rubrics);
+
+-- РЎРЅР°С‡Р°Р»Р° СЏ С…РѕС‚РµР» Р°РіСЂРµРіРёСЂРѕРІР°С‚СЊ СЂСѓР±СЂРёРєРё РІ РѕРґРЅСѓ СЃС‚СЂРѕРєСѓ, С‡С‚РѕР±С‹ РёР·Р±РµР¶Р°С‚СЊ РЅРµРЅСѓР¶РЅРѕРіРѕ РґСѓР±Р»РёСЂРѕРІР°РЅРёСЏ
+-- РќРѕ РІ РїСЂРѕС†РµСЃСЃРµ РїРѕСЃР»РµРґСѓСЋС‰РµРіРѕ РґРµР±Р°РіР° РёРЅРґРёРєР°С‚РѕСЂРѕРІ РѕС‚РєР°Р·Р°Р»СЃСЏ РѕС‚ СЌС‚РѕР№ РёРґРµРё
+-- Р›СѓС‡С€Рµ РµСЃР»Рё РґР»СЏ РёРЅРґРµРєСЃР° РѕРЅРё Р±СѓРґСѓС‚ РјР°РєСЃРёРјР°Р»СЊРЅРѕ РЅР°СЃР»РµРґРѕРІР°С‚СЊ СЃС‚Р°СЂСѓСЋ СЃС‚СЂСѓРєС‚СѓСЂСѓ
+-- РўР°Рє РІ РїРѕСЃР»РµРґСЃС‚РІРёРё РїСЂРѕС‰Рµ РёСЃРєР°С‚СЊ РёР·РјРµРЅРµРЅРёСЏ РІ РїРѕРєР°Р·Р°С‚РµР»СЏС…
+
+/* РђРіСЂРµРіРёСЂСѓРµРј СЃС‚Р°СЂС‹Рµ Р·РЅР°С‡РµРЅРёСЏ СЂСѓР±СЂРёРє РІ СЃРїРёСЃРѕРє 
+drop table if exists poi3;
+create temp table poi3 as 
 select distinct on (id, category_old)
 	company_id,
 	"name",
@@ -97,19 +102,31 @@ group by
 	geom,
 	subrubrics,
 	category
-;
-/* Ручные правки таблицы POI */
-/* Избирательные участки и петанк отсутствуют в выгрузке Яндекса 2020, поэтому было решено добавить их из выгрузки 2019 */
-insert into index2020.data_poi (company_id, "name",	id_gis,	geom, rubrics, sdz, odz, greenz, leisurez, ipa, stretail, trade, food, services)
+;*/
+/* Р СѓС‡РЅС‹Рµ РїСЂР°РІРєРё С‚Р°Р±Р»РёС†С‹ POI */
+/* РР·Р±РёСЂР°С‚РµР»СЊРЅС‹Рµ СѓС‡Р°СЃС‚РєРё Рё РїРµС‚Р°РЅРє РѕС‚СЃСѓС‚СЃС‚РІСѓСЋС‚ РІ РІС‹РіСЂСѓР·РєРµ РЇРЅРґРµРєСЃР° 2020, РїРѕСЌС‚РѕРјСѓ Р±С‹Р»Рѕ СЂРµС€РµРЅРѕ РґРѕР±Р°РІРёС‚СЊ РёС… РёР· РІС‹РіСЂСѓР·РєРё 2019 */
+insert into poi2 (company_id, "name",	id_gis,	geom, rubrics, sdz, odz, greenz, leisurez, ipa, stretail, trade, food, services)
 select company_id::bigint, "name",	id_gis,	geom, rubrics,  sdz, odz, greenz, leisurez, ipa, stretail, trade, food, services
 from index2019.data_poi p
-where p.rubrics in ('Избирательные комиссии и участки', 'Петанк')
-;
-/* Оперные театры отсутствуют как самостоятельная рубрика в выгрузке Яндекса 2020, поэтому добавляем её вручную на основе названия театра */
-update index2020.data_poi set rubrics = ('"Опера",' || rubrics) where rubrics like '%"Театр"%' and name ~* 'опер'
-;
-alter table index2020.data_poi add column id int primary key generated always as identity;
-create index on index2020.data_poi(rubrics); -- нейминг для лучшей обратной совместимости
+where p.rubrics in ('РР·Р±РёСЂР°С‚РµР»СЊРЅС‹Рµ РєРѕРјРёСЃСЃРёРё Рё СѓС‡Р°СЃС‚РєРё', 'РџРµС‚Р°РЅРє');
+
+create index on poi2(id_gis);
+create index on poi2 using gist(geom);
+
+/* РџСЂРѕРІРµСЂСЏРµРј РЅР° РІС…РѕР¶РґРµРЅРёРµ РІ С‚РѕСЂРіРѕРІС‹Р№ С†РµРЅС‚СЂ */
+drop table if exists index2020.data_poi;
+create table index2020.data_poi as 
+select
+	(row_number() over())::int fid,
+	p.*,
+	case when m.id is not null then true::bool else false::bool end mall
+from poi2 p
+left join index2020.data_mall m 
+	on m.id_gis = p.id_gis 
+		and st_intersects(m.geom, p.geom);
+
+alter table index2020.data_poi add primary key (fid);
+create index on index2020.data_poi(rubrics); -- РЅРµР№РјРёРЅРі РґР»СЏ Р»СѓС‡С€РµР№ РѕР±СЂР°С‚РЅРѕР№ СЃРѕРІРјРµСЃС‚РёРјРѕСЃС‚Рё
 create index on index2020.data_poi(category_new);
 create index on index2020.data_poi(subrubrics);
 create index on index2020.data_poi(category);
@@ -125,7 +142,32 @@ create index on index2020.data_poi(stretail);
 create index on index2020.data_poi(trade);
 create index on index2020.data_poi(food);
 create index on index2020.data_poi(services);
+create index on index2020.data_poi(mall);
 create index on index2020.data_poi using gist(geom);
 create index on index2020.data_poi using gist((geom::geography));
 
-alter table index2020.data_poi add column mall bool;
+/* РћРїРµСЂРЅС‹Рµ С‚РµР°С‚СЂС‹ РѕС‚СЃСѓС‚СЃС‚РІСѓСЋС‚ РєР°Рє СЃР°РјРѕСЃС‚РѕСЏС‚РµР»СЊРЅР°СЏ СЂСѓР±СЂРёРєР° РІ РІС‹РіСЂСѓР·РєРµ РЇРЅРґРµРєСЃР° 2020, РїРѕСЌС‚РѕРјСѓ РґРѕР±Р°РІР»СЏРµРј РµС‘ РІСЂСѓС‡РЅСѓСЋ РЅР° РѕСЃРЅРѕРІРµ РЅР°Р·РІР°РЅРёСЏ С‚РµР°С‚СЂР° */
+update index2020.data_poi set rubrics = ('"РћРїРµСЂР°",' || rubrics) where rubrics like '%"РўРµР°С‚СЂ"%' and name ~* 'РѕРїРµСЂ';
+
+
+
+/* РџР°СЂРєРё, СЃРєРІРµСЂС‹ Рё Р»РµСЃРѕРїР°СЂРєРё РёР· РЇРЅРґРµРєСЃР° РґР»СЏ СЃРІРµСЂРєРё СЃР»РѕСЏ Р‘Р»Р°РіРѕСѓСЃС‚СЂРѕРµРЅРЅРѕРіРѕ РѕР·РµР»РµРЅРµРЅРёСЏ РѕС‚РґРµР»СЊРЅС‹Рј СЃР»РѕРµРј */
+create table index2020.tmp_greenery_yandex as 
+	select 
+		id,
+		name,
+		description,
+		id_gis,
+		geom
+	from russia.poi_yandex_2020
+	where category_name ~ 'Р›РµСЃРѕРїР°СЂРє|РџР°СЂРє РєСѓР»СЊС‚СѓСЂС‹ Рё РѕС‚РґС‹С…Р°|РЎРєРІРµСЂ'
+		and id_gis is not null
+;
+
+alter table index2020.tmp_greenery_yandex add primary key(id);
+create index on index2020.tmp_greenery_yandex(id_gis);
+create index on index2020.tmp_greenery_yandex(name);
+create index on index2020.tmp_greenery_yandex using gist(geom);
+create index on index2020.tmp_greenery_yandex using gist((geom::geography));
+
+comment on table is index2020.tmp_greenery_yandex 'РџР°СЂРєРё, СЃРєРІРµСЂС‹ Рё Р»РµСЃРѕРїР°СЂРєРё РёР· РЇРЅРґРµРєСЃР° РґР»СЏ СЃРІРµСЂРєРё СЃР»РѕСЏ Р‘Р»Р°РіРѕСѓСЃС‚СЂРѕРµРЅРЅРѕРіРѕ РѕР·РµР»РµРЅРµРЅРёСЏ';

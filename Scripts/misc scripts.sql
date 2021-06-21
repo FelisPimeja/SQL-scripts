@@ -2205,6 +2205,43 @@ comment on table trash.city_all_rubrics_stat is 'Статистика по вс�
 
 
 
+/* Статистика по протяжённости УДС для 15 городов (Delivery Club, OSM типы highway) */
+create table tmp.road_stat as
+select 
+	b.id_gis,
+	b.city,
+	b.region,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'motorway') / 1000)::numeric, 2), 0) sum_len_motorway_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'motorway_link')  / 1000)::numeric, 2), 0)sum_len_motorway_link_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'trunk') / 1000)::numeric, 2), 0) sum_len_trunk_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'trunk_link') / 1000)::numeric, 2), 0) sum_len_trunk_link_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'primary') / 1000)::numeric, 2), 0) sum_len_primary_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'primary_link') / 1000)::numeric, 2), 0) sum_len_primary_link_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'secondary') / 1000)::numeric, 2), 0) sum_len_secondary_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'secondary_link') / 1000)::numeric, 2), 0) sum_len_secondary_link_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'tertiary') / 1000)::numeric, 2), 0) sum_len_tertiary_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'tertiary_link') / 1000)::numeric, 2), 0) sum_len_tertiary_link_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'unclassified') / 1000)::numeric, 2), 0) sum_len_unclassified_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'residential') / 1000)::numeric, 2), 0) sum_len_residential_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'living_street') / 1000)::numeric, 2), 0) sum_len_living_street_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'service') / 1000)::numeric, 2), 0) sum_len_service_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'pedestrian') / 1000)::numeric, 2), 0) sum_len_pedestrian_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'track') / 1000)::numeric, 2), 0) sum_len_track_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'road') / 1000)::numeric, 2), 0) sum_len_road_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'bus guideway') / 1000)::numeric, 2), 0) sum_len_bus_guideway_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'footway') / 1000)::numeric, 2), 0) sum_len_footway_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'bridleway') / 1000)::numeric, 2), 0) sum_len_bridleway_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'steps') / 1000)::numeric, 2), 0) sum_len_steps_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'corridor') / 1000)::numeric, 2), 0) sum_len_corridor_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'path') / 1000)::numeric, 2), 0) sum_len_path_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'sidewalk') / 1000)::numeric, 2), 0) sum_len_sidewalk_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'crossing') / 1000)::numeric, 2), 0) sum_len_crossing_km,
+	coalesce(round((sum(case when st_within(r.geom, b.geom) then st_length(r.geom::geography) else st_length(st_intersection(r.geom, b.geom)::geography) end) filter(where r.type = 'cycleway') / 1000)::numeric, 2), 0) sum_len_cycleway_km	
+from index2020.data_boundary b
+left join russia.roads_osm r 
+	on st_intersects(b.geom, r.geom)
+where b.id_gis in (777,778,973,1072,1073,1074,1075,1076,1077,1078,1079,1080,1081,1082,1083,1084)
+group by b.id_gis, b.city, b.region
 
 
 
@@ -2212,8 +2249,27 @@ comment on table trash.city_all_rubrics_stat is 'Статистика по вс�
 
 
 
-
-
+/* Статистика по плотности населения и УДС урбанизированной части городов (сразу в Excel)*/
+with stat_road as (
+	select
+		id_gis,
+		round((sum(st_length(geom::geography)) / 1000)::numeric, 2) sum_len_km
+	from index2020.data_road 
+	group by id_gis
+)
+select
+	c.id_gis,
+	c.city "Город",
+	c.region_name "Субъект РФ",
+	u.area_ha "S урбан. терр., га",
+	p.pop2020 "Население, чел.",
+	round((p.pop2020 / u.area_ha)::numeric, 2) "Плотность нас., чел./га",
+	r.sum_len_km "Протяжённость УДС, км.",
+	round((r.sum_len_km / u.area_ha)::numeric, 2) "Плотность УДС, км./га"
+from russia.city c
+left join russia.city_population_rosstat p using(id_gis)
+join russia.city_built_area_light u using(id_gis)
+join stat_road r using(id_gis)
 
 
 

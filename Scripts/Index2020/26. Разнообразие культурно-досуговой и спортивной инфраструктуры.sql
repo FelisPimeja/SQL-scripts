@@ -1,12 +1,12 @@
-/* 26-й индикатор. Разнообразие культурно-досуговой и спортивной инфраструктуры */
-/* Время расчёта ~ 5 сек. */
+/* 26-Р№ РёРЅРґРёРєР°С‚РѕСЂ. Р Р°Р·РЅРѕРѕР±СЂР°Р·РёРµ РєСѓР»СЊС‚СѓСЂРЅРѕ-РґРѕСЃСѓРіРѕРІРѕР№ Рё СЃРїРѕСЂС‚РёРІРЅРѕР№ РёРЅС„СЂР°СЃС‚СЂСѓРєС‚СѓСЂС‹ */
+/* Р’СЂРµРјСЏ СЂР°СЃС‡С‘С‚Р° ~ 20 СЃРµРє. */
 drop table if exists index2020.ind_i26; 
 create table index2020.ind_i26 as
 with subrubrics_count as (
 	 select id_gis, subrubrics,	count(*) poi_count
 	 from index2020.data_poi
 	 where leisurez is true
---		and id_gis < 100 -- для дебага
+--		and id_gis < 100 -- РґР»СЏ РґРµР±Р°РіР°
 	 group by id_gis, subrubrics
 )
 select
@@ -26,114 +26,114 @@ join (
 group by b.id_gis, b.city, b.region
 order by id_gis;
 
-/* Индексы */
+/* РРЅРґРµРєСЃС‹ */
 alter table index2020.ind_i26 add primary key(id_gis)
 ;
-/* Комментарии */
-comment on table index2020.ind_i26 is '26-й индикатор. Разнообразие культурно-досуговой и спортивной инфраструктуры';
-comment on column index2020.ind_i26.id_gis is 'Уникальный идентификатор города';
-comment on column index2020.ind_i26.city is 'Город';
-comment on column index2020.ind_i26.region is 'Субъект РФ';
-comment on column index2020.ind_i26.sport_diversity is 'Показатель разнообразия культурно-досуговой и спортивной инфраструктуры'
+/* РљРѕРјРјРµРЅС‚Р°СЂРёРё */
+comment on table index2020.ind_i26 is '26-Р№ РёРЅРґРёРєР°С‚РѕСЂ. Р Р°Р·РЅРѕРѕР±СЂР°Р·РёРµ РєСѓР»СЊС‚СѓСЂРЅРѕ-РґРѕСЃСѓРіРѕРІРѕР№ Рё СЃРїРѕСЂС‚РёРІРЅРѕР№ РёРЅС„СЂР°СЃС‚СЂСѓРєС‚СѓСЂС‹';
+comment on column index2020.ind_i26.id_gis is 'РЈРЅРёРєР°Р»СЊРЅС‹Р№ РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ РіРѕСЂРѕРґР°';
+comment on column index2020.ind_i26.city is 'Р“РѕСЂРѕРґ';
+comment on column index2020.ind_i26.region is 'РЎСѓР±СЉРµРєС‚ Р Р¤';
+comment on column index2020.ind_i26.sport_diversity is 'РџРѕРєР°Р·Р°С‚РµР»СЊ СЂР°Р·РЅРѕРѕР±СЂР°Р·РёСЏ РєСѓР»СЊС‚СѓСЂРЅРѕ-РґРѕСЃСѓРіРѕРІРѕР№ Рё СЃРїРѕСЂС‚РёРІРЅРѕР№ РёРЅС„СЂР°СЃС‚СЂСѓРєС‚СѓСЂС‹'
 ;
-/* Сводная статистика по сабрубрикам */
+/* РЎРІРѕРґРЅР°СЏ СЃС‚Р°С‚РёСЃС‚РёРєР° РїРѕ СЃР°Р±СЂСѓР±СЂРёРєР°Рј */
 drop table if exists index2020.stat_subrubrics; 
 create table index2020.stat_subrubrics as
 select 
 	b.id_gis,
 	b.city,
 	b.region,
-	subrbr.count "всего сабрубрик в городе",
-    coalesce(sub1.count, 0) "Азартные игры",
-    coalesce(sub2.count, 0) "Архивы и библиотеки",
-    coalesce(sub3.count, 0) "Бытовые услуги",
-    coalesce(sub4.count, 0) "Водный спорт",
-    coalesce(sub5.count, 0) "Водный транспорт",
-    coalesce(sub6.count, 0) "Живопись и художественные изделия",
-    coalesce(sub7.count, 0) "Кафе",
-    coalesce(sub8.count, 0) "Кино и театр",
-    coalesce(sub9.count, 0) "Конный спорт",
-    coalesce(sub10.count, 0) "Культурные центры",
-    coalesce(sub11.count, 0) "Музеи и выставки",
-    coalesce(sub12.count, 0) "Музыка и хореография",
-    coalesce(sub13.count, 0) "Общественное питание",
-    coalesce(sub14.count, 0) "Организация праздников",
-    coalesce(sub15.count, 0) "Парки и зоопарки",
-    coalesce(sub16.count, 0) "Прочее",
-    coalesce(sub17.count, 0) "Развлечения",
-    coalesce(sub18.count, 0) "Санатории и дома отдыха",
-    coalesce(sub19.count, 0) "Спортивные клубы и базы",
-    coalesce(sub20.count, 0) "Спортивные организации",
-    coalesce(sub21.count, 0) "Спортивные сооружения",
-    coalesce(sub22.count, 0) "Туризм",
-    coalesce(sub23.count, 0) "Уход за внешностью",
-    coalesce(sub24.count, 0) "Фитнес и йога",
-    coalesce(sub25.count, 0) "Экстремальный спорт"
+	subrbr.count "РІСЃРµРіРѕ СЃР°Р±СЂСѓР±СЂРёРє РІ РіРѕСЂРѕРґРµ",
+    coalesce(sub1.count, 0) "РђР·Р°СЂС‚РЅС‹Рµ РёРіСЂС‹",
+    coalesce(sub2.count, 0) "РђСЂС…РёРІС‹ Рё Р±РёР±Р»РёРѕС‚РµРєРё",
+    coalesce(sub3.count, 0) "Р‘С‹С‚РѕРІС‹Рµ СѓСЃР»СѓРіРё",
+    coalesce(sub4.count, 0) "Р’РѕРґРЅС‹Р№ СЃРїРѕСЂС‚",
+    coalesce(sub5.count, 0) "Р’РѕРґРЅС‹Р№ С‚СЂР°РЅСЃРїРѕСЂС‚",
+    coalesce(sub6.count, 0) "Р–РёРІРѕРїРёСЃСЊ Рё С…СѓРґРѕР¶РµСЃС‚РІРµРЅРЅС‹Рµ РёР·РґРµР»РёСЏ",
+    coalesce(sub7.count, 0) "РљР°С„Рµ",
+    coalesce(sub8.count, 0) "РљРёРЅРѕ Рё С‚РµР°С‚СЂ",
+    coalesce(sub9.count, 0) "РљРѕРЅРЅС‹Р№ СЃРїРѕСЂС‚",
+    coalesce(sub10.count, 0) "РљСѓР»СЊС‚СѓСЂРЅС‹Рµ С†РµРЅС‚СЂС‹",
+    coalesce(sub11.count, 0) "РњСѓР·РµРё Рё РІС‹СЃС‚Р°РІРєРё",
+    coalesce(sub12.count, 0) "РњСѓР·С‹РєР° Рё С…РѕСЂРµРѕРіСЂР°С„РёСЏ",
+    coalesce(sub13.count, 0) "РћР±С‰РµСЃС‚РІРµРЅРЅРѕРµ РїРёС‚Р°РЅРёРµ",
+    coalesce(sub14.count, 0) "РћСЂРіР°РЅРёР·Р°С†РёСЏ РїСЂР°Р·РґРЅРёРєРѕРІ",
+    coalesce(sub15.count, 0) "РџР°СЂРєРё Рё Р·РѕРѕРїР°СЂРєРё",
+    coalesce(sub16.count, 0) "РџСЂРѕС‡РµРµ",
+    coalesce(sub17.count, 0) "Р Р°Р·РІР»РµС‡РµРЅРёСЏ",
+    coalesce(sub18.count, 0) "РЎР°РЅР°С‚РѕСЂРёРё Рё РґРѕРјР° РѕС‚РґС‹С…Р°",
+    coalesce(sub19.count, 0) "РЎРїРѕСЂС‚РёРІРЅС‹Рµ РєР»СѓР±С‹ Рё Р±Р°Р·С‹",
+    coalesce(sub20.count, 0) "РЎРїРѕСЂС‚РёРІРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё",
+    coalesce(sub21.count, 0) "РЎРїРѕСЂС‚РёРІРЅС‹Рµ СЃРѕРѕСЂСѓР¶РµРЅРёСЏ",
+    coalesce(sub22.count, 0) "РўСѓСЂРёР·Рј",
+    coalesce(sub23.count, 0) "РЈС…РѕРґ Р·Р° РІРЅРµС€РЅРѕСЃС‚СЊСЋ",
+    coalesce(sub24.count, 0) "Р¤РёС‚РЅРµСЃ Рё Р№РѕРіР°",
+    coalesce(sub25.count, 0) "Р­РєСЃС‚СЂРµРјР°Р»СЊРЅС‹Р№ СЃРїРѕСЂС‚"
 from index2020.data_boundary b 
-left join (select id_gis, count(distinct subrubrics) count from index2020.data_poi where subrubrics = any('{Азартные игры,Архивы и библиотеки,Бытовые услуги,Водный спорт,Водный транспорт,Живопись и художественные изделия,Кафе,Кино и театр,Конный спорт,Культурные центры,Музеи и выставки,Музыка и хореография,Общественное питание,Организация праздников,Парки и зоопарки,Прочее,Развлечения,Санатории и дома отдыха,Спортивные клубы и базы,Спортивные организации,Спортивные сооружения,Туризм,Уход за внешностью,Фитнес и йога,Экстремальный спорт}')  group by id_gis) subrbr using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Азартные игры' group by id_gis) sub1 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Архивы и библиотеки' group by id_gis) sub2 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Бытовые услуги' group by id_gis) sub3 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Водный спорт' group by id_gis) sub4 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Водный транспорт' group by id_gis) sub5 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Живопись и художественные изделия' group by id_gis) sub6 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Кафе' group by id_gis) sub7 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Кино и театр' group by id_gis) sub8 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Конный спорт' group by id_gis) sub9 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Культурные центры' group by id_gis) sub10 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Музеи и выставки' group by id_gis) sub11 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Музыка и хореография' group by id_gis) sub12 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Общественное питание' group by id_gis) sub13 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Организация праздников' group by id_gis) sub14 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Парки и зоопарки' group by id_gis) sub15 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Прочее' group by id_gis) sub16 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Развлечения' group by id_gis) sub17 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Санатории и дома отдыха' group by id_gis) sub18 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Спортивные клубы и базы' group by id_gis) sub19 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Спортивные организации' group by id_gis) sub20 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Спортивные сооружения' group by id_gis) sub21 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Туризм' group by id_gis) sub22 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Уход за внешностью' group by id_gis) sub23 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Фитнес и йога' group by id_gis) sub24 using(id_gis)
-left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Экстремальный спорт' group by id_gis) sub25 using(id_gis)
+left join (select id_gis, count(distinct subrubrics) count from index2020.data_poi where subrubrics = any('{РђР·Р°СЂС‚РЅС‹Рµ РёРіСЂС‹,РђСЂС…РёРІС‹ Рё Р±РёР±Р»РёРѕС‚РµРєРё,Р‘С‹С‚РѕРІС‹Рµ СѓСЃР»СѓРіРё,Р’РѕРґРЅС‹Р№ СЃРїРѕСЂС‚,Р’РѕРґРЅС‹Р№ С‚СЂР°РЅСЃРїРѕСЂС‚,Р–РёРІРѕРїРёСЃСЊ Рё С…СѓРґРѕР¶РµСЃС‚РІРµРЅРЅС‹Рµ РёР·РґРµР»РёСЏ,РљР°С„Рµ,РљРёРЅРѕ Рё С‚РµР°С‚СЂ,РљРѕРЅРЅС‹Р№ СЃРїРѕСЂС‚,РљСѓР»СЊС‚СѓСЂРЅС‹Рµ С†РµРЅС‚СЂС‹,РњСѓР·РµРё Рё РІС‹СЃС‚Р°РІРєРё,РњСѓР·С‹РєР° Рё С…РѕСЂРµРѕРіСЂР°С„РёСЏ,РћР±С‰РµСЃС‚РІРµРЅРЅРѕРµ РїРёС‚Р°РЅРёРµ,РћСЂРіР°РЅРёР·Р°С†РёСЏ РїСЂР°Р·РґРЅРёРєРѕРІ,РџР°СЂРєРё Рё Р·РѕРѕРїР°СЂРєРё,РџСЂРѕС‡РµРµ,Р Р°Р·РІР»РµС‡РµРЅРёСЏ,РЎР°РЅР°С‚РѕСЂРёРё Рё РґРѕРјР° РѕС‚РґС‹С…Р°,РЎРїРѕСЂС‚РёРІРЅС‹Рµ РєР»СѓР±С‹ Рё Р±Р°Р·С‹,РЎРїРѕСЂС‚РёРІРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё,РЎРїРѕСЂС‚РёРІРЅС‹Рµ СЃРѕРѕСЂСѓР¶РµРЅРёСЏ,РўСѓСЂРёР·Рј,РЈС…РѕРґ Р·Р° РІРЅРµС€РЅРѕСЃС‚СЊСЋ,Р¤РёС‚РЅРµСЃ Рё Р№РѕРіР°,Р­РєСЃС‚СЂРµРјР°Р»СЊРЅС‹Р№ СЃРїРѕСЂС‚}')  group by id_gis) subrbr using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'РђР·Р°СЂС‚РЅС‹Рµ РёРіСЂС‹' group by id_gis) sub1 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'РђСЂС…РёРІС‹ Рё Р±РёР±Р»РёРѕС‚РµРєРё' group by id_gis) sub2 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Р‘С‹С‚РѕРІС‹Рµ СѓСЃР»СѓРіРё' group by id_gis) sub3 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Р’РѕРґРЅС‹Р№ СЃРїРѕСЂС‚' group by id_gis) sub4 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Р’РѕРґРЅС‹Р№ С‚СЂР°РЅСЃРїРѕСЂС‚' group by id_gis) sub5 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Р–РёРІРѕРїРёСЃСЊ Рё С…СѓРґРѕР¶РµСЃС‚РІРµРЅРЅС‹Рµ РёР·РґРµР»РёСЏ' group by id_gis) sub6 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'РљР°С„Рµ' group by id_gis) sub7 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'РљРёРЅРѕ Рё С‚РµР°С‚СЂ' group by id_gis) sub8 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'РљРѕРЅРЅС‹Р№ СЃРїРѕСЂС‚' group by id_gis) sub9 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'РљСѓР»СЊС‚СѓСЂРЅС‹Рµ С†РµРЅС‚СЂС‹' group by id_gis) sub10 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'РњСѓР·РµРё Рё РІС‹СЃС‚Р°РІРєРё' group by id_gis) sub11 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'РњСѓР·С‹РєР° Рё С…РѕСЂРµРѕРіСЂР°С„РёСЏ' group by id_gis) sub12 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'РћР±С‰РµСЃС‚РІРµРЅРЅРѕРµ РїРёС‚Р°РЅРёРµ' group by id_gis) sub13 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'РћСЂРіР°РЅРёР·Р°С†РёСЏ РїСЂР°Р·РґРЅРёРєРѕРІ' group by id_gis) sub14 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'РџР°СЂРєРё Рё Р·РѕРѕРїР°СЂРєРё' group by id_gis) sub15 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'РџСЂРѕС‡РµРµ' group by id_gis) sub16 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Р Р°Р·РІР»РµС‡РµРЅРёСЏ' group by id_gis) sub17 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'РЎР°РЅР°С‚РѕСЂРёРё Рё РґРѕРјР° РѕС‚РґС‹С…Р°' group by id_gis) sub18 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'РЎРїРѕСЂС‚РёРІРЅС‹Рµ РєР»СѓР±С‹ Рё Р±Р°Р·С‹' group by id_gis) sub19 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'РЎРїРѕСЂС‚РёРІРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё' group by id_gis) sub20 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'РЎРїРѕСЂС‚РёРІРЅС‹Рµ СЃРѕРѕСЂСѓР¶РµРЅРёСЏ' group by id_gis) sub21 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'РўСѓСЂРёР·Рј' group by id_gis) sub22 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'РЈС…РѕРґ Р·Р° РІРЅРµС€РЅРѕСЃС‚СЊСЋ' group by id_gis) sub23 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Р¤РёС‚РЅРµСЃ Рё Р№РѕРіР°' group by id_gis) sub24 using(id_gis)
+left join (select id_gis, count(*) count from index2020.data_poi where subrubrics = 'Р­РєСЃС‚СЂРµРјР°Р»СЊРЅС‹Р№ СЃРїРѕСЂС‚' group by id_gis) sub25 using(id_gis)
 order by id_gis
 ;
-/* Индексы */
+/* РРЅРґРµРєСЃС‹ */
 alter table index2020.stat_subrubrics add primary key(id_gis)
 ;
-/* Комментарии */
-comment on table index2020.stat_subrubrics is '26-й индикатор. Сводная статистика по сабрубрикам';
-comment on column index2020.stat_subrubrics.id_gis is 'Уникальный идентификатор города';
-comment on column index2020.stat_subrubrics.city is 'Город';
-comment on column index2020.stat_subrubrics.region is 'Субъект РФ';
-comment on column index2020.stat_subrubrics."Азартные игры" is 'Азартные игры';
-comment on column index2020.stat_subrubrics."Архивы и библиотеки" is 'Архивы и библиотеки';
-comment on column index2020.stat_subrubrics."Бытовые услуги" is 'Бытовые услуги';
-comment on column index2020.stat_subrubrics."Водный спорт" is 'Водный спорт';
-comment on column index2020.stat_subrubrics."Водный транспорт" is 'Водный транспорт';
-comment on column index2020.stat_subrubrics."Живопись и художественные изделия" is 'Живопись и художественные изделия';
-comment on column index2020.stat_subrubrics."Кафе" is 'Кафе';
-comment on column index2020.stat_subrubrics."Кино и театр" is 'Кино и театр';
-comment on column index2020.stat_subrubrics."Конный спорт" is 'Конный спорт';
-comment on column index2020.stat_subrubrics."Культурные центры" is 'Культурные центры';
-comment on column index2020.stat_subrubrics."Музеи и выставки" is 'Музеи и выставки';
-comment on column index2020.stat_subrubrics."Музыка и хореография" is 'Музыка и хореография';
-comment on column index2020.stat_subrubrics."Общественное питание" is 'Общественное питание';
-comment on column index2020.stat_subrubrics."Организация праздников" is 'Организация праздников';
-comment on column index2020.stat_subrubrics."Парки и зоопарки" is 'Парки и зоопарки';
-comment on column index2020.stat_subrubrics."Прочее" is 'Прочее';
-comment on column index2020.stat_subrubrics."Развлечения" is 'Развлечения';
-comment on column index2020.stat_subrubrics."Санатории и дома отдыха" is 'Санатории и дома отдыха';
-comment on column index2020.stat_subrubrics."Спортивные клубы и базы" is 'Спортивные клубы и базы';
-comment on column index2020.stat_subrubrics."Спортивные организации" is 'Спортивные организации';
-comment on column index2020.stat_subrubrics."Спортивные сооружения" is 'Спортивные сооружения';
-comment on column index2020.stat_subrubrics."Туризм" is 'Туризм';
-comment on column index2020.stat_subrubrics."Уход за внешностью" is 'Уход за внешностью';
-comment on column index2020.stat_subrubrics."Фитнес и йога" is 'Фитнес и йога';
-comment on column index2020.stat_subrubrics."Экстремальный спорт" is 'Экстремальный спорт'
+/* РљРѕРјРјРµРЅС‚Р°СЂРёРё */
+comment on table index2020.stat_subrubrics is '26-Р№ РёРЅРґРёРєР°С‚РѕСЂ. РЎРІРѕРґРЅР°СЏ СЃС‚Р°С‚РёСЃС‚РёРєР° РїРѕ СЃР°Р±СЂСѓР±СЂРёРєР°Рј';
+comment on column index2020.stat_subrubrics.id_gis is 'РЈРЅРёРєР°Р»СЊРЅС‹Р№ РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ РіРѕСЂРѕРґР°';
+comment on column index2020.stat_subrubrics.city is 'Р“РѕСЂРѕРґ';
+comment on column index2020.stat_subrubrics.region is 'РЎСѓР±СЉРµРєС‚ Р Р¤';
+comment on column index2020.stat_subrubrics."РђР·Р°СЂС‚РЅС‹Рµ РёРіСЂС‹" is 'РђР·Р°СЂС‚РЅС‹Рµ РёРіСЂС‹';
+comment on column index2020.stat_subrubrics."РђСЂС…РёРІС‹ Рё Р±РёР±Р»РёРѕС‚РµРєРё" is 'РђСЂС…РёРІС‹ Рё Р±РёР±Р»РёРѕС‚РµРєРё';
+comment on column index2020.stat_subrubrics."Р‘С‹С‚РѕРІС‹Рµ СѓСЃР»СѓРіРё" is 'Р‘С‹С‚РѕРІС‹Рµ СѓСЃР»СѓРіРё';
+comment on column index2020.stat_subrubrics."Р’РѕРґРЅС‹Р№ СЃРїРѕСЂС‚" is 'Р’РѕРґРЅС‹Р№ СЃРїРѕСЂС‚';
+comment on column index2020.stat_subrubrics."Р’РѕРґРЅС‹Р№ С‚СЂР°РЅСЃРїРѕСЂС‚" is 'Р’РѕРґРЅС‹Р№ С‚СЂР°РЅСЃРїРѕСЂС‚';
+comment on column index2020.stat_subrubrics."Р–РёРІРѕРїРёСЃСЊ Рё С…СѓРґРѕР¶РµСЃС‚РІРµРЅРЅС‹Рµ РёР·РґРµР»РёСЏ" is 'Р–РёРІРѕРїРёСЃСЊ Рё С…СѓРґРѕР¶РµСЃС‚РІРµРЅРЅС‹Рµ РёР·РґРµР»РёСЏ';
+comment on column index2020.stat_subrubrics."РљР°С„Рµ" is 'РљР°С„Рµ';
+comment on column index2020.stat_subrubrics."РљРёРЅРѕ Рё С‚РµР°С‚СЂ" is 'РљРёРЅРѕ Рё С‚РµР°С‚СЂ';
+comment on column index2020.stat_subrubrics."РљРѕРЅРЅС‹Р№ СЃРїРѕСЂС‚" is 'РљРѕРЅРЅС‹Р№ СЃРїРѕСЂС‚';
+comment on column index2020.stat_subrubrics."РљСѓР»СЊС‚СѓСЂРЅС‹Рµ С†РµРЅС‚СЂС‹" is 'РљСѓР»СЊС‚СѓСЂРЅС‹Рµ С†РµРЅС‚СЂС‹';
+comment on column index2020.stat_subrubrics."РњСѓР·РµРё Рё РІС‹СЃС‚Р°РІРєРё" is 'РњСѓР·РµРё Рё РІС‹СЃС‚Р°РІРєРё';
+comment on column index2020.stat_subrubrics."РњСѓР·С‹РєР° Рё С…РѕСЂРµРѕРіСЂР°С„РёСЏ" is 'РњСѓР·С‹РєР° Рё С…РѕСЂРµРѕРіСЂР°С„РёСЏ';
+comment on column index2020.stat_subrubrics."РћР±С‰РµСЃС‚РІРµРЅРЅРѕРµ РїРёС‚Р°РЅРёРµ" is 'РћР±С‰РµСЃС‚РІРµРЅРЅРѕРµ РїРёС‚Р°РЅРёРµ';
+comment on column index2020.stat_subrubrics."РћСЂРіР°РЅРёР·Р°С†РёСЏ РїСЂР°Р·РґРЅРёРєРѕРІ" is 'РћСЂРіР°РЅРёР·Р°С†РёСЏ РїСЂР°Р·РґРЅРёРєРѕРІ';
+comment on column index2020.stat_subrubrics."РџР°СЂРєРё Рё Р·РѕРѕРїР°СЂРєРё" is 'РџР°СЂРєРё Рё Р·РѕРѕРїР°СЂРєРё';
+comment on column index2020.stat_subrubrics."РџСЂРѕС‡РµРµ" is 'РџСЂРѕС‡РµРµ';
+comment on column index2020.stat_subrubrics."Р Р°Р·РІР»РµС‡РµРЅРёСЏ" is 'Р Р°Р·РІР»РµС‡РµРЅРёСЏ';
+comment on column index2020.stat_subrubrics."РЎР°РЅР°С‚РѕСЂРёРё Рё РґРѕРјР° РѕС‚РґС‹С…Р°" is 'РЎР°РЅР°С‚РѕСЂРёРё Рё РґРѕРјР° РѕС‚РґС‹С…Р°';
+comment on column index2020.stat_subrubrics."РЎРїРѕСЂС‚РёРІРЅС‹Рµ РєР»СѓР±С‹ Рё Р±Р°Р·С‹" is 'РЎРїРѕСЂС‚РёРІРЅС‹Рµ РєР»СѓР±С‹ Рё Р±Р°Р·С‹';
+comment on column index2020.stat_subrubrics."РЎРїРѕСЂС‚РёРІРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё" is 'РЎРїРѕСЂС‚РёРІРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё';
+comment on column index2020.stat_subrubrics."РЎРїРѕСЂС‚РёРІРЅС‹Рµ СЃРѕРѕСЂСѓР¶РµРЅРёСЏ" is 'РЎРїРѕСЂС‚РёРІРЅС‹Рµ СЃРѕРѕСЂСѓР¶РµРЅРёСЏ';
+comment on column index2020.stat_subrubrics."РўСѓСЂРёР·Рј" is 'РўСѓСЂРёР·Рј';
+comment on column index2020.stat_subrubrics."РЈС…РѕРґ Р·Р° РІРЅРµС€РЅРѕСЃС‚СЊСЋ" is 'РЈС…РѕРґ Р·Р° РІРЅРµС€РЅРѕСЃС‚СЊСЋ';
+comment on column index2020.stat_subrubrics."Р¤РёС‚РЅРµСЃ Рё Р№РѕРіР°" is 'Р¤РёС‚РЅРµСЃ Рё Р№РѕРіР°';
+comment on column index2020.stat_subrubrics."Р­РєСЃС‚СЂРµРјР°Р»СЊРЅС‹Р№ СЃРїРѕСЂС‚" is 'Р­РєСЃС‚СЂРµРјР°Р»СЊРЅС‹Р№ СЃРїРѕСЂС‚'
 ;
-/* Проверки */
-/* Сравнение с 2019 годом. */
+/* РџСЂРѕРІРµСЂРєРё */
+/* РЎСЂР°РІРЅРµРЅРёРµ СЃ 2019 РіРѕРґРѕРј. */
 drop table if exists index2020.comp_i26;
 create table index2020.comp_i26 as
 select 
@@ -148,122 +148,122 @@ select
 	 	when coalesce(i1.sport_diversity, 0) = coalesce(round(i2.sport_divercity::numeric, 4), 0)
 			then null
 		else 2019
-	end)::smallint higher_value, -- в каком году показатель выше
-	coalesce(i3."всего сабрубрик в городе", 0)::smallint "Всего сабрубрик в городе_2019",
-	coalesce(i4."всего сабрубрик в городе", 0)::smallint "Всего сабрубрик в городе_2020",
-	coalesce(i3."Азартные игры", 0)::smallint "Азартные игры_2019",
-	coalesce(i4."Азартные игры", 0)::smallint "Азартные игры_2020",
-	coalesce(i3."Архивы и библиотеки", 0)::smallint "Архивы и библиотеки_2019",
-	coalesce(i4."Архивы и библиотеки", 0)::smallint "Архивы и библиотеки_2020",
-	coalesce(i3."Бытовые услуги", 0)::smallint "Бытовые услуги_2019",
-	coalesce(i4."Бытовые услуги", 0)::smallint "Бытовые услуги_2020",
-	coalesce(i3."Водный спорт", 0)::smallint "Водный спорт_2019",
-	coalesce(i4."Водный спорт", 0)::smallint "Водный спорт_2020",
-	coalesce(i3."Водный транспорт", 0)::smallint "Водный транспорт_2019",
-	coalesce(i4."Водный транспорт", 0)::smallint "Водный транспорт_2020",
-	coalesce(i3."Живопись и художественные изделия", 0)::smallint "Живопись и худож. изделия_2019",
-	coalesce(i4."Живопись и художественные изделия", 0)::smallint "Живопись и худож. изделия_2020",
-	coalesce(i3."Кафе", 0)::smallint "Кафе_2019",
-	coalesce(i4."Кафе", 0)::smallint "Кафе_2020",
-	coalesce(i3."Кино и театр", 0)::smallint "Кино и театр_2019",
-	coalesce(i4."Кино и театр", 0)::smallint "Кино и театр_2020",
-	coalesce(i3."Конный спорт", 0)::smallint "Конный спорт_2019",
-	coalesce(i4."Конный спорт", 0)::smallint "Конный спорт_2020",
-	coalesce(i3."Культурные центры", 0)::smallint "Культурные центры_2019",
-	coalesce(i4."Культурные центры", 0)::smallint "Культурные центры_2020",
-	coalesce(i3."Музеи и выставки", 0)::smallint "Музеи и выставки_2019",
-	coalesce(i4."Музеи и выставки", 0)::smallint "Музеи и выставки_2020",
-	coalesce(i3."Музыка и хореография", 0)::smallint "Музыка и хореография_2019",
-	coalesce(i4."Музыка и хореография", 0)::smallint "Музыка и хореография_2020",
-	coalesce(i3."Общественное питание", 0)::smallint "Общественное питание_2019",
-	coalesce(i4."Общественное питание", 0)::smallint "Общественное питание_2020",
-	coalesce(i3."Организация праздников", 0)::smallint "Организация праздников_2019",
-	coalesce(i4."Организация праздников", 0)::smallint "Организация праздников_2020",
-	coalesce(i3."Парки и зоопарки", 0)::smallint "Парки и зоопарки_2019",
-	coalesce(i4."Парки и зоопарки", 0)::smallint "Парки и зоопарки_2020",
-	coalesce(i3."Прочее", 0)::smallint "Прочее_2019",
-	coalesce(i4."Прочее", 0)::smallint "Прочее_2020",
-	coalesce(i3."Развлечения", 0)::smallint "Развлечения_2019",
-	coalesce(i4."Развлечения", 0)::smallint "Развлечения_2020",
-	coalesce(i3."Санатории и дома отдыха", 0)::smallint "Санатории и дома отдыха_2019",
-	coalesce(i4."Санатории и дома отдыха", 0)::smallint "Санатории и дома отдыха_2020",
-	coalesce(i3."Спортивные клубы и базы", 0)::smallint "Спортивные клубы и базы_2019",
-	coalesce(i4."Спортивные клубы и базы", 0)::smallint "Спортивные клубы и базы_2020",
-	coalesce(i3."Спортивные организации", 0)::smallint "Спортивные организации_2019",
-	coalesce(i4."Спортивные организации", 0)::smallint "Спортивные организации_2020",
-	coalesce(i3."Спортивные сооружения", 0)::smallint "Спортивные сооружения_2019",
-	coalesce(i4."Спортивные сооружения", 0)::smallint "Спортивные сооружения_2020",
-	coalesce(i3."Туризм", 0)::smallint "Туризм_2019",
-	coalesce(i4."Туризм", 0)::smallint "Туризм_2020",
-	coalesce(i3."Уход за внешностью", 0)::int "Уход за внешностью_2019",
-	coalesce(i4."Уход за внешностью", 0)::int "Уход за внешностью_2020",
-	coalesce(i3."Фитнес и йога", 0)::smallint "Фитнес и йога_2019",
-	coalesce(i4."Фитнес и йога", 0)::smallint "Фитнес и йога_2020",
-	coalesce(i3."Экстремальный спорт", 0)::smallint "Экстремальный спорт_2019",
-	coalesce(i4."Экстремальный спорт", 0)::smallint "Экстремальный спорт_2020"
+	end)::smallint higher_value, -- РІ РєР°РєРѕРј РіРѕРґСѓ РїРѕРєР°Р·Р°С‚РµР»СЊ РІС‹С€Рµ
+	coalesce(i3."РІСЃРµРіРѕ СЃР°Р±СЂСѓР±СЂРёРє РІ РіРѕСЂРѕРґРµ", 0)::smallint "Р’СЃРµРіРѕ СЃР°Р±СЂСѓР±СЂРёРє РІ РіРѕСЂРѕРґРµ_2019",
+	coalesce(i4."РІСЃРµРіРѕ СЃР°Р±СЂСѓР±СЂРёРє РІ РіРѕСЂРѕРґРµ", 0)::smallint "Р’СЃРµРіРѕ СЃР°Р±СЂСѓР±СЂРёРє РІ РіРѕСЂРѕРґРµ_2020",
+	coalesce(i3."РђР·Р°СЂС‚РЅС‹Рµ РёРіСЂС‹", 0)::smallint "РђР·Р°СЂС‚РЅС‹Рµ РёРіСЂС‹_2019",
+	coalesce(i4."РђР·Р°СЂС‚РЅС‹Рµ РёРіСЂС‹", 0)::smallint "РђР·Р°СЂС‚РЅС‹Рµ РёРіСЂС‹_2020",
+	coalesce(i3."РђСЂС…РёРІС‹ Рё Р±РёР±Р»РёРѕС‚РµРєРё", 0)::smallint "РђСЂС…РёРІС‹ Рё Р±РёР±Р»РёРѕС‚РµРєРё_2019",
+	coalesce(i4."РђСЂС…РёРІС‹ Рё Р±РёР±Р»РёРѕС‚РµРєРё", 0)::smallint "РђСЂС…РёРІС‹ Рё Р±РёР±Р»РёРѕС‚РµРєРё_2020",
+	coalesce(i3."Р‘С‹С‚РѕРІС‹Рµ СѓСЃР»СѓРіРё", 0)::smallint "Р‘С‹С‚РѕРІС‹Рµ СѓСЃР»СѓРіРё_2019",
+	coalesce(i4."Р‘С‹С‚РѕРІС‹Рµ СѓСЃР»СѓРіРё", 0)::smallint "Р‘С‹С‚РѕРІС‹Рµ СѓСЃР»СѓРіРё_2020",
+	coalesce(i3."Р’РѕРґРЅС‹Р№ СЃРїРѕСЂС‚", 0)::smallint "Р’РѕРґРЅС‹Р№ СЃРїРѕСЂС‚_2019",
+	coalesce(i4."Р’РѕРґРЅС‹Р№ СЃРїРѕСЂС‚", 0)::smallint "Р’РѕРґРЅС‹Р№ СЃРїРѕСЂС‚_2020",
+	coalesce(i3."Р’РѕРґРЅС‹Р№ С‚СЂР°РЅСЃРїРѕСЂС‚", 0)::smallint "Р’РѕРґРЅС‹Р№ С‚СЂР°РЅСЃРїРѕСЂС‚_2019",
+	coalesce(i4."Р’РѕРґРЅС‹Р№ С‚СЂР°РЅСЃРїРѕСЂС‚", 0)::smallint "Р’РѕРґРЅС‹Р№ С‚СЂР°РЅСЃРїРѕСЂС‚_2020",
+	coalesce(i3."Р–РёРІРѕРїРёСЃСЊ Рё С…СѓРґРѕР¶РµСЃС‚РІРµРЅРЅС‹Рµ РёР·РґРµР»РёСЏ", 0)::smallint "Р–РёРІРѕРїРёСЃСЊ Рё С…СѓРґРѕР¶. РёР·РґРµР»РёСЏ_2019",
+	coalesce(i4."Р–РёРІРѕРїРёСЃСЊ Рё С…СѓРґРѕР¶РµСЃС‚РІРµРЅРЅС‹Рµ РёР·РґРµР»РёСЏ", 0)::smallint "Р–РёРІРѕРїРёСЃСЊ Рё С…СѓРґРѕР¶. РёР·РґРµР»РёСЏ_2020",
+	coalesce(i3."РљР°С„Рµ", 0)::smallint "РљР°С„Рµ_2019",
+	coalesce(i4."РљР°С„Рµ", 0)::smallint "РљР°С„Рµ_2020",
+	coalesce(i3."РљРёРЅРѕ Рё С‚РµР°С‚СЂ", 0)::smallint "РљРёРЅРѕ Рё С‚РµР°С‚СЂ_2019",
+	coalesce(i4."РљРёРЅРѕ Рё С‚РµР°С‚СЂ", 0)::smallint "РљРёРЅРѕ Рё С‚РµР°С‚СЂ_2020",
+	coalesce(i3."РљРѕРЅРЅС‹Р№ СЃРїРѕСЂС‚", 0)::smallint "РљРѕРЅРЅС‹Р№ СЃРїРѕСЂС‚_2019",
+	coalesce(i4."РљРѕРЅРЅС‹Р№ СЃРїРѕСЂС‚", 0)::smallint "РљРѕРЅРЅС‹Р№ СЃРїРѕСЂС‚_2020",
+	coalesce(i3."РљСѓР»СЊС‚СѓСЂРЅС‹Рµ С†РµРЅС‚СЂС‹", 0)::smallint "РљСѓР»СЊС‚СѓСЂРЅС‹Рµ С†РµРЅС‚СЂС‹_2019",
+	coalesce(i4."РљСѓР»СЊС‚СѓСЂРЅС‹Рµ С†РµРЅС‚СЂС‹", 0)::smallint "РљСѓР»СЊС‚СѓСЂРЅС‹Рµ С†РµРЅС‚СЂС‹_2020",
+	coalesce(i3."РњСѓР·РµРё Рё РІС‹СЃС‚Р°РІРєРё", 0)::smallint "РњСѓР·РµРё Рё РІС‹СЃС‚Р°РІРєРё_2019",
+	coalesce(i4."РњСѓР·РµРё Рё РІС‹СЃС‚Р°РІРєРё", 0)::smallint "РњСѓР·РµРё Рё РІС‹СЃС‚Р°РІРєРё_2020",
+	coalesce(i3."РњСѓР·С‹РєР° Рё С…РѕСЂРµРѕРіСЂР°С„РёСЏ", 0)::smallint "РњСѓР·С‹РєР° Рё С…РѕСЂРµРѕРіСЂР°С„РёСЏ_2019",
+	coalesce(i4."РњСѓР·С‹РєР° Рё С…РѕСЂРµРѕРіСЂР°С„РёСЏ", 0)::smallint "РњСѓР·С‹РєР° Рё С…РѕСЂРµРѕРіСЂР°С„РёСЏ_2020",
+	coalesce(i3."РћР±С‰РµСЃС‚РІРµРЅРЅРѕРµ РїРёС‚Р°РЅРёРµ", 0)::smallint "РћР±С‰РµСЃС‚РІРµРЅРЅРѕРµ РїРёС‚Р°РЅРёРµ_2019",
+	coalesce(i4."РћР±С‰РµСЃС‚РІРµРЅРЅРѕРµ РїРёС‚Р°РЅРёРµ", 0)::smallint "РћР±С‰РµСЃС‚РІРµРЅРЅРѕРµ РїРёС‚Р°РЅРёРµ_2020",
+	coalesce(i3."РћСЂРіР°РЅРёР·Р°С†РёСЏ РїСЂР°Р·РґРЅРёРєРѕРІ", 0)::smallint "РћСЂРіР°РЅРёР·Р°С†РёСЏ РїСЂР°Р·РґРЅРёРєРѕРІ_2019",
+	coalesce(i4."РћСЂРіР°РЅРёР·Р°С†РёСЏ РїСЂР°Р·РґРЅРёРєРѕРІ", 0)::smallint "РћСЂРіР°РЅРёР·Р°С†РёСЏ РїСЂР°Р·РґРЅРёРєРѕРІ_2020",
+	coalesce(i3."РџР°СЂРєРё Рё Р·РѕРѕРїР°СЂРєРё", 0)::smallint "РџР°СЂРєРё Рё Р·РѕРѕРїР°СЂРєРё_2019",
+	coalesce(i4."РџР°СЂРєРё Рё Р·РѕРѕРїР°СЂРєРё", 0)::smallint "РџР°СЂРєРё Рё Р·РѕРѕРїР°СЂРєРё_2020",
+	coalesce(i3."РџСЂРѕС‡РµРµ", 0)::smallint "РџСЂРѕС‡РµРµ_2019",
+	coalesce(i4."РџСЂРѕС‡РµРµ", 0)::smallint "РџСЂРѕС‡РµРµ_2020",
+	coalesce(i3."Р Р°Р·РІР»РµС‡РµРЅРёСЏ", 0)::smallint "Р Р°Р·РІР»РµС‡РµРЅРёСЏ_2019",
+	coalesce(i4."Р Р°Р·РІР»РµС‡РµРЅРёСЏ", 0)::smallint "Р Р°Р·РІР»РµС‡РµРЅРёСЏ_2020",
+	coalesce(i3."РЎР°РЅР°С‚РѕСЂРёРё Рё РґРѕРјР° РѕС‚РґС‹С…Р°", 0)::smallint "РЎР°РЅР°С‚РѕСЂРёРё Рё РґРѕРјР° РѕС‚РґС‹С…Р°_2019",
+	coalesce(i4."РЎР°РЅР°С‚РѕСЂРёРё Рё РґРѕРјР° РѕС‚РґС‹С…Р°", 0)::smallint "РЎР°РЅР°С‚РѕСЂРёРё Рё РґРѕРјР° РѕС‚РґС‹С…Р°_2020",
+	coalesce(i3."РЎРїРѕСЂС‚РёРІРЅС‹Рµ РєР»СѓР±С‹ Рё Р±Р°Р·С‹", 0)::smallint "РЎРїРѕСЂС‚РёРІРЅС‹Рµ РєР»СѓР±С‹ Рё Р±Р°Р·С‹_2019",
+	coalesce(i4."РЎРїРѕСЂС‚РёРІРЅС‹Рµ РєР»СѓР±С‹ Рё Р±Р°Р·С‹", 0)::smallint "РЎРїРѕСЂС‚РёРІРЅС‹Рµ РєР»СѓР±С‹ Рё Р±Р°Р·С‹_2020",
+	coalesce(i3."РЎРїРѕСЂС‚РёРІРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё", 0)::smallint "РЎРїРѕСЂС‚РёРІРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё_2019",
+	coalesce(i4."РЎРїРѕСЂС‚РёРІРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё", 0)::smallint "РЎРїРѕСЂС‚РёРІРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё_2020",
+	coalesce(i3."РЎРїРѕСЂС‚РёРІРЅС‹Рµ СЃРѕРѕСЂСѓР¶РµРЅРёСЏ", 0)::smallint "РЎРїРѕСЂС‚РёРІРЅС‹Рµ СЃРѕРѕСЂСѓР¶РµРЅРёСЏ_2019",
+	coalesce(i4."РЎРїРѕСЂС‚РёРІРЅС‹Рµ СЃРѕРѕСЂСѓР¶РµРЅРёСЏ", 0)::smallint "РЎРїРѕСЂС‚РёРІРЅС‹Рµ СЃРѕРѕСЂСѓР¶РµРЅРёСЏ_2020",
+	coalesce(i3."РўСѓСЂРёР·Рј", 0)::smallint "РўСѓСЂРёР·Рј_2019",
+	coalesce(i4."РўСѓСЂРёР·Рј", 0)::smallint "РўСѓСЂРёР·Рј_2020",
+	coalesce(i3."РЈС…РѕРґ Р·Р° РІРЅРµС€РЅРѕСЃС‚СЊСЋ", 0)::int "РЈС…РѕРґ Р·Р° РІРЅРµС€РЅРѕСЃС‚СЊСЋ_2019",
+	coalesce(i4."РЈС…РѕРґ Р·Р° РІРЅРµС€РЅРѕСЃС‚СЊСЋ", 0)::int "РЈС…РѕРґ Р·Р° РІРЅРµС€РЅРѕСЃС‚СЊСЋ_2020",
+	coalesce(i3."Р¤РёС‚РЅРµСЃ Рё Р№РѕРіР°", 0)::smallint "Р¤РёС‚РЅРµСЃ Рё Р№РѕРіР°_2019",
+	coalesce(i4."Р¤РёС‚РЅРµСЃ Рё Р№РѕРіР°", 0)::smallint "Р¤РёС‚РЅРµСЃ Рё Р№РѕРіР°_2020",
+	coalesce(i3."Р­РєСЃС‚СЂРµРјР°Р»СЊРЅС‹Р№ СЃРїРѕСЂС‚", 0)::smallint "Р­РєСЃС‚СЂРµРјР°Р»СЊРЅС‹Р№ СЃРїРѕСЂС‚_2019",
+	coalesce(i4."Р­РєСЃС‚СЂРµРјР°Р»СЊРЅС‹Р№ СЃРїРѕСЂС‚", 0)::smallint "Р­РєСЃС‚СЂРµРјР°Р»СЊРЅС‹Р№ СЃРїРѕСЂС‚_2020"
 from index2020.ind_i26 i1
 left join index2019.ind_i26 i2 using(id_gis)
 left join index2019.stat_subrubrics i3 using(id_gis)
 left join index2020.stat_subrubrics i4 using(id_gis)
 order by id_gis
 ;
-/* Комментарии */
-comment on table index2020.comp_i26 is 'Сравнение с 2019 годом. 26-й индикатор. Разнообразие культурно-досуговой и спортивной инфраструктуры.';
-comment on column index2020.comp_i26.id_gis is 'Уникальный идентификатор города';
-comment on column index2020.comp_i26.city is 'Город';
-comment on column index2020.comp_i26.region is 'Субъект РФ';
-comment on column index2020.comp_i26.sport_divercity_2019 is 'Разнообразие спортивной инфраструктуры на 2019 год';
-comment on column index2020.comp_i26.sport_divercity_2020 is 'Разнообразие спортивной инфраструктуры на 2020 год';
-comment on column index2020.comp_i26.higher_value is 'В каком году показатель "Разнообразие спортивной инфраструктуры" выше';
-comment on column index2020.comp_i26."Всего сабрубрик в городе_2019" is 'Вего сабрубрик в городе на 2019 год';
-comment on column index2020.comp_i26."Всего сабрубрик в городе_2020" is 'Всего сабрубрик в городе на 2020 год';
-comment on column index2020.comp_i26."Азартные игры_2019" is 'Азартные игры на 2019 год';
-comment on column index2020.comp_i26."Азартные игры_2020" is 'Азартные игры на 2020 год';
-comment on column index2020.comp_i26."Архивы и библиотеки_2019" is 'Архивы и библиотеки на 2019 год';
-comment on column index2020.comp_i26."Архивы и библиотеки_2020" is 'Архивы и библиотеки на 2020 год';
-comment on column index2020.comp_i26."Бытовые услуги_2019" is 'Бытовые услуги на 2019 год';
-comment on column index2020.comp_i26."Бытовые услуги_2020" is 'Бытовые услуги на 2020 год';
-comment on column index2020.comp_i26."Водный спорт_2019" is 'Водный спорт на 2019 год';
-comment on column index2020.comp_i26."Водный спорт_2020" is 'Водный спорт на 2020 год';
-comment on column index2020.comp_i26."Водный транспорт_2019" is 'Водный транспорт на 2019 год';
-comment on column index2020.comp_i26."Водный транспорт_2020" is 'Водный транспорт на 2020 год';
-comment on column index2020.comp_i26."Живопись и худож. изделия_2019" is 'Живопись и художественные изделия на 2019 год';
-comment on column index2020.comp_i26."Живопись и худож. изделия_2020" is 'Живопись и художественные изделия на 2020 год';
-comment on column index2020.comp_i26."Кафе_2019" is 'Кафе на 2019 год';
-comment on column index2020.comp_i26."Кафе_2020" is 'Кафе на 2020 год';
-comment on column index2020.comp_i26."Кино и театр_2019" is 'Кино и театр на 2019 год';
-comment on column index2020.comp_i26."Кино и театр_2020" is 'Кино и театр на 2020 год';
-comment on column index2020.comp_i26."Конный спорт_2019" is 'Конный спорт на 2019 год';
-comment on column index2020.comp_i26."Конный спорт_2020" is 'Конный спорт на 2020 год';
-comment on column index2020.comp_i26."Культурные центры_2019" is 'Культурные центры на 2019 год';
-comment on column index2020.comp_i26."Культурные центры_2020" is 'Культурные центры на 2020 год';
-comment on column index2020.comp_i26."Музеи и выставки_2019" is 'Музеи и выставки на 2019 год';
-comment on column index2020.comp_i26."Музеи и выставки_2020" is 'Музеи и выставки на 2020 год';
-comment on column index2020.comp_i26."Музыка и хореография_2019" is 'Музыка и хореография на 2019 год';
-comment on column index2020.comp_i26."Музыка и хореография_2020" is 'Музыка и хореография на 2020 год';
-comment on column index2020.comp_i26."Общественное питание_2019" is 'Общественное питание на 2019 год';
-comment on column index2020.comp_i26."Общественное питание_2020" is 'Общественное питание на 2020 год';
-comment on column index2020.comp_i26."Организация праздников_2019" is 'Организация праздников на 2019 год';
-comment on column index2020.comp_i26."Организация праздников_2020" is 'Организация праздников на 2020 год';
-comment on column index2020.comp_i26."Парки и зоопарки_2019" is 'Парки и зоопарки на 2019 год';
-comment on column index2020.comp_i26."Парки и зоопарки_2020" is 'Парки и зоопарки на 2020 год';
-comment on column index2020.comp_i26."Прочее_2019" is 'Прочее на 2019 год';
-comment on column index2020.comp_i26."Прочее_2020" is 'Прочее на 2020 год';
-comment on column index2020.comp_i26."Развлечения_2019" is 'Развлечения на 2019 год';
-comment on column index2020.comp_i26."Развлечения_2020" is 'Развлечения на 2020 год';
-comment on column index2020.comp_i26."Санатории и дома отдыха_2019" is 'Санатории и дома отдыха на 2019 год';
-comment on column index2020.comp_i26."Санатории и дома отдыха_2020" is 'Санатории и дома отдыха на 2020 год';
-comment on column index2020.comp_i26."Спортивные клубы и базы_2019" is 'Спортивные клубы и базы на 2019 год';
-comment on column index2020.comp_i26."Спортивные клубы и базы_2020" is 'Спортивные клубы и базы на 2020 год';
-comment on column index2020.comp_i26."Спортивные организации_2019" is 'Спортивные организации на 2019 год';
-comment on column index2020.comp_i26."Спортивные организации_2020" is 'Спортивные организации на 2020 год';
-comment on column index2020.comp_i26."Спортивные сооружения_2019" is 'Спортивные сооружения на 2019 год';
-comment on column index2020.comp_i26."Спортивные сооружения_2020" is 'Спортивные сооружения на 2020 год';
-comment on column index2020.comp_i26."Туризм_2019" is 'Туризм на 2019 год';
-comment on column index2020.comp_i26."Туризм_2020" is 'Туризм на 2020 год';
-comment on column index2020.comp_i26."Уход за внешностью_2019" is 'Уход за внешностью на 2019 год';
-comment on column index2020.comp_i26."Уход за внешностью_2020" is 'Уход за внешностью на 2020 год';
-comment on column index2020.comp_i26."Фитнес и йога_2019" is 'Фитнес и йога на 2019 год';
-comment on column index2020.comp_i26."Фитнес и йога_2020" is 'Фитнес и йога на 2020 год';
-comment on column index2020.comp_i26."Экстремальный спорт_2019" is 'Экстремальный спорт на 2019 год';
-comment on column index2020.comp_i26."Экстремальный спорт_2020" is 'Экстремальный спорт на 2020 год';
+/* РљРѕРјРјРµРЅС‚Р°СЂРёРё */
+comment on table index2020.comp_i26 is 'РЎСЂР°РІРЅРµРЅРёРµ СЃ 2019 РіРѕРґРѕРј. 26-Р№ РёРЅРґРёРєР°С‚РѕСЂ. Р Р°Р·РЅРѕРѕР±СЂР°Р·РёРµ РєСѓР»СЊС‚СѓСЂРЅРѕ-РґРѕСЃСѓРіРѕРІРѕР№ Рё СЃРїРѕСЂС‚РёРІРЅРѕР№ РёРЅС„СЂР°СЃС‚СЂСѓРєС‚СѓСЂС‹.';
+comment on column index2020.comp_i26.id_gis is 'РЈРЅРёРєР°Р»СЊРЅС‹Р№ РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ РіРѕСЂРѕРґР°';
+comment on column index2020.comp_i26.city is 'Р“РѕСЂРѕРґ';
+comment on column index2020.comp_i26.region is 'РЎСѓР±СЉРµРєС‚ Р Р¤';
+comment on column index2020.comp_i26.sport_divercity_2019 is 'Р Р°Р·РЅРѕРѕР±СЂР°Р·РёРµ СЃРїРѕСЂС‚РёРІРЅРѕР№ РёРЅС„СЂР°СЃС‚СЂСѓРєС‚СѓСЂС‹ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26.sport_divercity_2020 is 'Р Р°Р·РЅРѕРѕР±СЂР°Р·РёРµ СЃРїРѕСЂС‚РёРІРЅРѕР№ РёРЅС„СЂР°СЃС‚СЂСѓРєС‚СѓСЂС‹ РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26.higher_value is 'Р’ РєР°РєРѕРј РіРѕРґСѓ РїРѕРєР°Р·Р°С‚РµР»СЊ "Р Р°Р·РЅРѕРѕР±СЂР°Р·РёРµ СЃРїРѕСЂС‚РёРІРЅРѕР№ РёРЅС„СЂР°СЃС‚СЂСѓРєС‚СѓСЂС‹" РІС‹С€Рµ';
+comment on column index2020.comp_i26."Р’СЃРµРіРѕ СЃР°Р±СЂСѓР±СЂРёРє РІ РіРѕСЂРѕРґРµ_2019" is 'Р’РµРіРѕ СЃР°Р±СЂСѓР±СЂРёРє РІ РіРѕСЂРѕРґРµ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."Р’СЃРµРіРѕ СЃР°Р±СЂСѓР±СЂРёРє РІ РіРѕСЂРѕРґРµ_2020" is 'Р’СЃРµРіРѕ СЃР°Р±СЂСѓР±СЂРёРє РІ РіРѕСЂРѕРґРµ РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."РђР·Р°СЂС‚РЅС‹Рµ РёРіСЂС‹_2019" is 'РђР·Р°СЂС‚РЅС‹Рµ РёРіСЂС‹ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."РђР·Р°СЂС‚РЅС‹Рµ РёРіСЂС‹_2020" is 'РђР·Р°СЂС‚РЅС‹Рµ РёРіСЂС‹ РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."РђСЂС…РёРІС‹ Рё Р±РёР±Р»РёРѕС‚РµРєРё_2019" is 'РђСЂС…РёРІС‹ Рё Р±РёР±Р»РёРѕС‚РµРєРё РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."РђСЂС…РёРІС‹ Рё Р±РёР±Р»РёРѕС‚РµРєРё_2020" is 'РђСЂС…РёРІС‹ Рё Р±РёР±Р»РёРѕС‚РµРєРё РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."Р‘С‹С‚РѕРІС‹Рµ СѓСЃР»СѓРіРё_2019" is 'Р‘С‹С‚РѕРІС‹Рµ СѓСЃР»СѓРіРё РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."Р‘С‹С‚РѕРІС‹Рµ СѓСЃР»СѓРіРё_2020" is 'Р‘С‹С‚РѕРІС‹Рµ СѓСЃР»СѓРіРё РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."Р’РѕРґРЅС‹Р№ СЃРїРѕСЂС‚_2019" is 'Р’РѕРґРЅС‹Р№ СЃРїРѕСЂС‚ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."Р’РѕРґРЅС‹Р№ СЃРїРѕСЂС‚_2020" is 'Р’РѕРґРЅС‹Р№ СЃРїРѕСЂС‚ РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."Р’РѕРґРЅС‹Р№ С‚СЂР°РЅСЃРїРѕСЂС‚_2019" is 'Р’РѕРґРЅС‹Р№ С‚СЂР°РЅСЃРїРѕСЂС‚ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."Р’РѕРґРЅС‹Р№ С‚СЂР°РЅСЃРїРѕСЂС‚_2020" is 'Р’РѕРґРЅС‹Р№ С‚СЂР°РЅСЃРїРѕСЂС‚ РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."Р–РёРІРѕРїРёСЃСЊ Рё С…СѓРґРѕР¶. РёР·РґРµР»РёСЏ_2019" is 'Р–РёРІРѕРїРёСЃСЊ Рё С…СѓРґРѕР¶РµСЃС‚РІРµРЅРЅС‹Рµ РёР·РґРµР»РёСЏ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."Р–РёРІРѕРїРёСЃСЊ Рё С…СѓРґРѕР¶. РёР·РґРµР»РёСЏ_2020" is 'Р–РёРІРѕРїРёСЃСЊ Рё С…СѓРґРѕР¶РµСЃС‚РІРµРЅРЅС‹Рµ РёР·РґРµР»РёСЏ РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."РљР°С„Рµ_2019" is 'РљР°С„Рµ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."РљР°С„Рµ_2020" is 'РљР°С„Рµ РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."РљРёРЅРѕ Рё С‚РµР°С‚СЂ_2019" is 'РљРёРЅРѕ Рё С‚РµР°С‚СЂ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."РљРёРЅРѕ Рё С‚РµР°С‚СЂ_2020" is 'РљРёРЅРѕ Рё С‚РµР°С‚СЂ РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."РљРѕРЅРЅС‹Р№ СЃРїРѕСЂС‚_2019" is 'РљРѕРЅРЅС‹Р№ СЃРїРѕСЂС‚ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."РљРѕРЅРЅС‹Р№ СЃРїРѕСЂС‚_2020" is 'РљРѕРЅРЅС‹Р№ СЃРїРѕСЂС‚ РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."РљСѓР»СЊС‚СѓСЂРЅС‹Рµ С†РµРЅС‚СЂС‹_2019" is 'РљСѓР»СЊС‚СѓСЂРЅС‹Рµ С†РµРЅС‚СЂС‹ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."РљСѓР»СЊС‚СѓСЂРЅС‹Рµ С†РµРЅС‚СЂС‹_2020" is 'РљСѓР»СЊС‚СѓСЂРЅС‹Рµ С†РµРЅС‚СЂС‹ РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."РњСѓР·РµРё Рё РІС‹СЃС‚Р°РІРєРё_2019" is 'РњСѓР·РµРё Рё РІС‹СЃС‚Р°РІРєРё РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."РњСѓР·РµРё Рё РІС‹СЃС‚Р°РІРєРё_2020" is 'РњСѓР·РµРё Рё РІС‹СЃС‚Р°РІРєРё РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."РњСѓР·С‹РєР° Рё С…РѕСЂРµРѕРіСЂР°С„РёСЏ_2019" is 'РњСѓР·С‹РєР° Рё С…РѕСЂРµРѕРіСЂР°С„РёСЏ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."РњСѓР·С‹РєР° Рё С…РѕСЂРµРѕРіСЂР°С„РёСЏ_2020" is 'РњСѓР·С‹РєР° Рё С…РѕСЂРµРѕРіСЂР°С„РёСЏ РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."РћР±С‰РµСЃС‚РІРµРЅРЅРѕРµ РїРёС‚Р°РЅРёРµ_2019" is 'РћР±С‰РµСЃС‚РІРµРЅРЅРѕРµ РїРёС‚Р°РЅРёРµ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."РћР±С‰РµСЃС‚РІРµРЅРЅРѕРµ РїРёС‚Р°РЅРёРµ_2020" is 'РћР±С‰РµСЃС‚РІРµРЅРЅРѕРµ РїРёС‚Р°РЅРёРµ РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."РћСЂРіР°РЅРёР·Р°С†РёСЏ РїСЂР°Р·РґРЅРёРєРѕРІ_2019" is 'РћСЂРіР°РЅРёР·Р°С†РёСЏ РїСЂР°Р·РґРЅРёРєРѕРІ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."РћСЂРіР°РЅРёР·Р°С†РёСЏ РїСЂР°Р·РґРЅРёРєРѕРІ_2020" is 'РћСЂРіР°РЅРёР·Р°С†РёСЏ РїСЂР°Р·РґРЅРёРєРѕРІ РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."РџР°СЂРєРё Рё Р·РѕРѕРїР°СЂРєРё_2019" is 'РџР°СЂРєРё Рё Р·РѕРѕРїР°СЂРєРё РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."РџР°СЂРєРё Рё Р·РѕРѕРїР°СЂРєРё_2020" is 'РџР°СЂРєРё Рё Р·РѕРѕРїР°СЂРєРё РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."РџСЂРѕС‡РµРµ_2019" is 'РџСЂРѕС‡РµРµ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."РџСЂРѕС‡РµРµ_2020" is 'РџСЂРѕС‡РµРµ РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."Р Р°Р·РІР»РµС‡РµРЅРёСЏ_2019" is 'Р Р°Р·РІР»РµС‡РµРЅРёСЏ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."Р Р°Р·РІР»РµС‡РµРЅРёСЏ_2020" is 'Р Р°Р·РІР»РµС‡РµРЅРёСЏ РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."РЎР°РЅР°С‚РѕСЂРёРё Рё РґРѕРјР° РѕС‚РґС‹С…Р°_2019" is 'РЎР°РЅР°С‚РѕСЂРёРё Рё РґРѕРјР° РѕС‚РґС‹С…Р° РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."РЎР°РЅР°С‚РѕСЂРёРё Рё РґРѕРјР° РѕС‚РґС‹С…Р°_2020" is 'РЎР°РЅР°С‚РѕСЂРёРё Рё РґРѕРјР° РѕС‚РґС‹С…Р° РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."РЎРїРѕСЂС‚РёРІРЅС‹Рµ РєР»СѓР±С‹ Рё Р±Р°Р·С‹_2019" is 'РЎРїРѕСЂС‚РёРІРЅС‹Рµ РєР»СѓР±С‹ Рё Р±Р°Р·С‹ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."РЎРїРѕСЂС‚РёРІРЅС‹Рµ РєР»СѓР±С‹ Рё Р±Р°Р·С‹_2020" is 'РЎРїРѕСЂС‚РёРІРЅС‹Рµ РєР»СѓР±С‹ Рё Р±Р°Р·С‹ РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."РЎРїРѕСЂС‚РёРІРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё_2019" is 'РЎРїРѕСЂС‚РёРІРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."РЎРїРѕСЂС‚РёРІРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё_2020" is 'РЎРїРѕСЂС‚РёРІРЅС‹Рµ РѕСЂРіР°РЅРёР·Р°С†РёРё РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."РЎРїРѕСЂС‚РёРІРЅС‹Рµ СЃРѕРѕСЂСѓР¶РµРЅРёСЏ_2019" is 'РЎРїРѕСЂС‚РёРІРЅС‹Рµ СЃРѕРѕСЂСѓР¶РµРЅРёСЏ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."РЎРїРѕСЂС‚РёРІРЅС‹Рµ СЃРѕРѕСЂСѓР¶РµРЅРёСЏ_2020" is 'РЎРїРѕСЂС‚РёРІРЅС‹Рµ СЃРѕРѕСЂСѓР¶РµРЅРёСЏ РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."РўСѓСЂРёР·Рј_2019" is 'РўСѓСЂРёР·Рј РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."РўСѓСЂРёР·Рј_2020" is 'РўСѓСЂРёР·Рј РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."РЈС…РѕРґ Р·Р° РІРЅРµС€РЅРѕСЃС‚СЊСЋ_2019" is 'РЈС…РѕРґ Р·Р° РІРЅРµС€РЅРѕСЃС‚СЊСЋ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."РЈС…РѕРґ Р·Р° РІРЅРµС€РЅРѕСЃС‚СЊСЋ_2020" is 'РЈС…РѕРґ Р·Р° РІРЅРµС€РЅРѕСЃС‚СЊСЋ РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."Р¤РёС‚РЅРµСЃ Рё Р№РѕРіР°_2019" is 'Р¤РёС‚РЅРµСЃ Рё Р№РѕРіР° РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."Р¤РёС‚РЅРµСЃ Рё Р№РѕРіР°_2020" is 'Р¤РёС‚РЅРµСЃ Рё Р№РѕРіР° РЅР° 2020 РіРѕРґ';
+comment on column index2020.comp_i26."Р­РєСЃС‚СЂРµРјР°Р»СЊРЅС‹Р№ СЃРїРѕСЂС‚_2019" is 'Р­РєСЃС‚СЂРµРјР°Р»СЊРЅС‹Р№ СЃРїРѕСЂС‚ РЅР° 2019 РіРѕРґ';
+comment on column index2020.comp_i26."Р­РєСЃС‚СЂРµРјР°Р»СЊРЅС‹Р№ СЃРїРѕСЂС‚_2020" is 'Р­РєСЃС‚СЂРµРјР°Р»СЊРЅС‹Р№ СЃРїРѕСЂС‚ РЅР° 2020 РіРѕРґ';

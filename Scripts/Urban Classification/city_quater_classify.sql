@@ -158,7 +158,7 @@ join osm.railroads_ru r
 		and r.tunnel != 1 and r.bridge != 1 -- отбрасываем мосты и туннели
 		and st_isvalid(r.geom); -- check geometry
 
-/* собираем ысё вышеперечисленное в один объект */
+/* собираем всё вышеперечисленное в один объект */
 drop table if exists area_union;
 create temp table area_union as			
 select id_gis, st_buffer(st_collect(geom), 0) geom
@@ -169,7 +169,7 @@ from (
 ) un
 group by id_gis;
 
-/* вырезаем ысё вышесобранное из буфера от зданий */
+/* вырезаем всё вышесобранное из буфера от зданий */
 drop table if exists boundary_clip;
 create temp table boundary_clip as 
 select

@@ -1,21 +1,21 @@
-/* Генерация гексагональной сетки на bbox городов + 5 км буфер (проще потом править сетку при изменении границ) */
-/* Требуется PostGIS 3.1!!! */
-/* Время рассчёта ~ 50 мин. */
-/* Генерируем ббоксы границ городов */
+/* Р“РµРЅРµСЂР°С†РёСЏ РіРµРєСЃР°РіРѕРЅР°Р»СЊРЅРѕР№ СЃРµС‚РєРё РЅР° bbox РіРѕСЂРѕРґРѕРІ + 5 РєРј Р±СѓС„РµСЂ (РїСЂРѕС‰Рµ РїРѕС‚РѕРј РїСЂР°РІРёС‚СЊ СЃРµС‚РєСѓ РїСЂРё РёР·РјРµРЅРµРЅРёРё РіСЂР°РЅРёС†) */
+/* РўСЂРµР±СѓРµС‚СЃСЏ PostGIS 3.1!!! */
+/* Р’СЂРµРјСЏ СЂР°СЃСЃС‡С‘С‚Р° ~ 50 РјРёРЅ. */
+/* Р“РµРЅРµСЂРёСЂСѓРµРј Р±Р±РѕРєСЃС‹ РіСЂР°РЅРёС† РіРѕСЂРѕРґРѕРІ */
 drop table if exists bbox;
 create temp table bbox as
-	select st_envelope(st_buffer(geom::geography, 5000)::geometry)::geometry(polygon, 4326) geom -- bbox от 5 км. буфера границ городов
+	select st_envelope(st_buffer(geom::geography, 5000)::geometry)::geometry(polygon, 4326) geom -- bbox РѕС‚ 5 РєРј. Р±СѓС„РµСЂР° РіСЂР°РЅРёС† РіРѕСЂРѕРґРѕРІ
 	from tmp.data_boundary
---	where id_gis <= 100 -- для дебага
+--	where id_gis <= 100 -- РґР»СЏ РґРµР±Р°РіР°
 ;
 create index on bbox using gist(geom)
 ;
-/* Сливаем границы */
+/* РЎР»РёРІР°РµРј РіСЂР°РЅРёС†С‹ */
 drop table if exists united;
 create temp table united as
 	select st_union(geom) geom from bbox
 ;
-/* Разбираем границы обратно */
+/* Р Р°Р·Р±РёСЂР°РµРј РіСЂР°РЅРёС†С‹ РѕР±СЂР°С‚РЅРѕ */
 drop table if exists parted;
 create temp table parted as
 	select (st_dump(geom)).geom::geometry(polygon, 4326) geom from united;
@@ -24,9 +24,10 @@ create index on parted using gist(geom)
 drop table if exists num_parted;
 create temp table num_parted as
 	select row_number() over() id, * from parted;
+create index on num_parted(id)
 create index on num_parted using gist(geom)
 ;
-/* Пересекаем с utm зонами */
+/* РџРµСЂРµСЃРµРєР°РµРј СЃ utm Р·РѕРЅР°РјРё */
 drop table if exists bound;
 create temp table bound as
 	select distinct on (p.id)
@@ -40,24 +41,26 @@ create index on bound using gist(geom)
 ;
 drop table if exists hex;
 create temp table hex as
-	select crs, st_transform(st_setsrid((st_hexagongrid(62.04, st_transform(geom, crs))).geom, crs), 4326)::geometry(polygon, 4326) geom
+	select crs, id box_id, st_transform(st_setsrid((st_hexagongrid(62.04, st_transform(geom, crs))).geom, crs), 4326)::geometry(polygon, 4326) geom
 	from bound;
+create index on hex(box_id);
 create index on hex using gist(geom)
 ;
-/* Пересекаем гексагоны с границами bbox */
+/* РџРµСЂРµСЃРµРєР°РµРј РіРµРєСЃР°РіРѕРЅС‹ СЃ РіСЂР°РЅРёС†Р°РјРё bbox */
 drop table if exists tmp.hexgrid_1ha;
 create table tmp.hexgrid_1ha as
 select (row_number() over())::int id, h.geom
 from hex h
-join parted p
-	on st_intersects(p.geom, h.geom);
+join num_parted p
+	on p.id = h.box_id
+		and st_intersects(p.geom, h.geom);
 create index on tmp.hexgrid_1ha using gist(geom);
-create index on tmp.hexgrid_1ha using gist((geom::geography));
 
--- Если предыдущий шаг сделан на локальной базе, то копирование займёт около 40 мин (точно не замерил...)
+-- Р•СЃР»Рё РїСЂРµРґС‹РґСѓС‰РёР№ С€Р°Рі СЃРґРµР»Р°РЅ РЅР° Р»РѕРєР°Р»СЊРЅРѕР№ Р±Р°Р·Рµ, С‚Рѕ РєРѕРїРёСЂРѕРІР°РЅРёРµ Р·Р°Р№РјС‘С‚ РѕРєРѕР»Рѕ 30 РјРёРЅ.:
+-- ogr2ogr -f PostgreSQL PG:"host=10.168.22.29 port=5433 dbname=kbpvdb user=editor password=pgeditor" -f "PostgreSQL" PG:"host=localhost port=5432 dbname=postgres user=postgres password=admin" tmp.hexgrid_1ha -lco GEOMETRY_NAME=geom -lco OVERWRITE=yes -lco SCHEMA=russia -lco FID=id -progress --config PG_USE_COPY YES
 
-/* Обрезка гексагональной сектки по границам городов */
-/* Время расчёта ~ 36 мин. */
+/* РћР±СЂРµР·РєР° РіРµРєСЃР°РіРѕРЅР°Р»СЊРЅРѕР№ СЃРµРєС‚РєРё РїРѕ РіСЂР°РЅРёС†Р°Рј РіРѕСЂРѕРґРѕРІ */
+/* Р’СЂРµРјСЏ СЂР°СЃС‡С‘С‚Р° ~ 36 РјРёРЅ. */
 drop table if exists index2020.data_hexgrid;
 create table index2020.data_hexgrid as 
 select
@@ -78,9 +81,9 @@ select
 from index2020.data_boundary b
 left join russia.hexgrid_1ha g
 	on st_intersects(b.geom, g.geom)
---where b.id_gis <= 10 -- дебаг
+--where b.id_gis <= 10 -- РґРµР±Р°Рі
 ;
-/* PK, индексы и кластеризация */
+/* PK, РёРЅРґРµРєСЃС‹ Рё РєР»Р°СЃС‚РµСЂРёР·Р°С†РёСЏ */
 --alter table index2020.data_hexgrid drop column id;
 alter table index2020.data_hexgrid add primary key(id);
 create index on index2020.data_hexgrid (id_gis);
@@ -88,6 +91,6 @@ create index on index2020.data_hexgrid (area_ha);
 create index on index2020.data_hexgrid using gist(geom);
 --cluster index2020.data_hexgrid using data_hexgrid_geom_idx
 ;
-/* Комментарии */
+/* РљРѕРјРјРµРЅС‚Р°СЂРёРё */
 comment on table index2020.data_hexgrid is 
-'Гексагональная сетка, обрезанная по границам городов';
+'Р“РµРєСЃР°РіРѕРЅР°Р»СЊРЅР°СЏ СЃРµС‚РєР°, РѕР±СЂРµР·Р°РЅРЅР°СЏ РїРѕ РіСЂР°РЅРёС†Р°Рј РіРѕСЂРѕРґРѕРІ';
