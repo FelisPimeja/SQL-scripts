@@ -85,6 +85,18 @@ comment on column index2020.comp_i16.photos_to_km2_2020 is 'Привлекате
 comment on column index2020.comp_i16.higher_value is 'В каком году показатель "Привлекательность озелененных территорий" выше';
 
 
+/* Визуалка навскидку что-то типа: */
+drop table if exists index2020.viz_i16;
+create table index2020.viz_i16 as
+	select v.*
+	from index2020.data_greenery g
+	left join index2020.data_vk v
+		on st_intersects(v.geom, g.geom)
+			and v.id_gis = g.id_gis
+	where g.id_gis is not null
+--		and g.id_gis <= 100 -- для дебага
+;
+
 /* Вывод сравнительной таблицы в Excel */
 /*
 select 
