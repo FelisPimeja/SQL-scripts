@@ -55,7 +55,3 @@ comment on column index2020.stat_zoning.z3_odz is 'Количество объе
 comment on column index2020.stat_zoning.mu_odz is 'Доля общественно-деловой функции в ячейке';
 comment on column index2020.stat_zoning.sbrbr_count is 'Разнообразие сабрубрик в ячейке';
 comment on column index2020.stat_zoning.area_ha is 'Площадь ячейки';
-
-
-
-
