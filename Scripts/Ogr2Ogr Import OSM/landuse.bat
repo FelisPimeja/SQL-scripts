@@ -6,7 +6,7 @@ set startTime=%time%
 :: todo - добавить military
 :: todo - разобраться почему не подгружаются некоторые мосты и лэндюзы
  ogr2ogr ^
- -f PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=10.168.22.29 port=5433" ^
+ -f PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  "D:\apetrov\Projects\Postgres\OSM\PBF\russia-latest.osm.pbf" ^
  -sql "select (case when landuse is not null then landuse when amenity is not null then amenity when leisure is not null then leisure when tourism is not null then tourism when place is not null then place when highway is not null then highway when area_highway is not null then area_highway when man_made is not null then man_made end) type, name, access, null id_gis, null area_ha, all_tags, geometry from multipolygons where ((landuse is not null and landuse not in ('forest', 'grass', 'village_green', 'orchard', 'meadow', 'greenfield', 'recreation_ground', 'reservoir') or (amenity is not null and building is null and (parking is null or parking != 'underground')) or (leisure in ('park','garden','nature_reserve','stadium','golf_course') and building is null)  or (tourism = 'zoo' and building is null) or (place = 'square') or (highway is not null) or (area_highway is not null) or (man_made = 'bridge')) and indoor is null and (layer is null or layer >= 0))" ^
  --config OSM_CONFIG_FILE "D:\apetrov\git\SQL-scripts\Scripts\Ogr2Ogr Import OSM\osmconf.ini" ^
@@ -23,7 +23,7 @@ set startTime=%time%
 
 :: Приведение, обработка, индексы и комментарии
 ogr2ogr ^
- PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=10.168.22.29 port=5433" ^
+ PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  -sql ^
 "/* Проверка геометрии, id_gis и площади */ ^
 update russia.landuse_osm set geom = st_collectionextract(st_makevalid(st_removerepeatedpoints(st_snaptogrid(geom, 0.0000001))), 3); ^

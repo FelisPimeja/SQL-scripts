@@ -57,7 +57,7 @@ join num_parted p
 create index on tmp.hexgrid_1ha using gist(geom);
 
 -- Если предыдущий шаг сделан на локальной базе, то копирование займёт около 30 мин.:
--- ogr2ogr -f PostgreSQL PG:"host=10.168.22.29 port=5433 dbname=kbpvdb user=editor password=pgeditor" -f "PostgreSQL" PG:"host=localhost port=5432 dbname=postgres user=postgres password=admin" tmp.hexgrid_1ha -lco GEOMETRY_NAME=geom -lco OVERWRITE=yes -lco SCHEMA=russia -lco FID=id -progress --config PG_USE_COPY YES
+-- ogr2ogr -f PostgreSQL PG:"host=%PGHOST% port=%PGPORT% dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD" -f "PostgreSQL" PG:"host=%PGHOST% port=%PGPORT% dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD" tmp.hexgrid_1ha -lco GEOMETRY_NAME=geom -lco OVERWRITE=yes -lco SCHEMA=russia -lco FID=id -progress --config PG_USE_COPY YES
 
 /* Обрезка гексагональной сектки по границам городов */
 /* Время расчёта ~ 36 мин. */

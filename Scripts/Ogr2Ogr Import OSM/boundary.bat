@@ -3,7 +3,7 @@ set startTime=%time%
 :: Время выполнения ~ 13 мин.
 :: Загрузка всех границ для последующего разбора
  ogr2ogr ^
- -f PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ -f PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  "D:\apetrov\Projects\Postgres\OSM\PBF\russia-latest.osm.pbf" ^
  -sql "select boundary, admin_level, name, replace(wikipedia, ':', '.wikipedia.org/wiki/') wikipedia_link, wikidata wikidata_id, other_tags, geometry from multipolygons where type = 'boundary'" ^
  --config OSM_CONFIG_FILE "C:\Users\apetrov\git\SQL-scripts\Scripts\Ogr2Ogr Import OSM\osmconf.ini ^
@@ -22,7 +22,7 @@ set startTime=%time%
 
 :: Приведение, обработка, индексы и комментарии
 ogr2ogr ^
- PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  -sql ^
 "/* Проверка и обработка геометрии */ ^
 update russia.osm_boundary_all set geom = st_collectionextract(st_makevalid(st_removerepeatedpoints(st_snaptogrid(geom, 0.0000001))), 3); ^
@@ -39,7 +39,7 @@ create index osm_admin_boundary_all_geog_idx on russia.osm_boundary_all using gi
 
 :: Федеральные округа:
 ogr2ogr ^
- PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  -sql ^
 "drop table if exists russia.osm_admin_boundary_federal_district; ^
 create table russia.osm_admin_boundary_federal_district as select (row_number() over())::int id, name, wikidata_id, wikipedia_link, other_tags, geom from russia.osm_boundary_all where admin_level = 3; ^
@@ -62,7 +62,7 @@ comment on column russia.osm_admin_boundary_federal_district.geom is 'Геоме
 
 :: Субъекты РФ:
 ogr2ogr ^
- PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  -sql ^
 "drop table if exists russia.osm_admin_boundary_region; ^
 create table russia.osm_admin_boundary_region as select (row_number() over())::int id, name, wikidata_id, wikipedia_link, other_tags, geom from russia.osm_boundary_all where admin_level = 4; ^
@@ -85,7 +85,7 @@ comment on column russia.osm_admin_boundary_region.geom is 'Геометрия';
 
 :: Экономические районы:
 ogr2ogr ^
- PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  -sql ^
 "drop table if exists russia.osm_boundary_economic_region; ^
 create table russia.osm_boundary_economic_region as select (row_number() over())::int id, name, wikidata_id, wikipedia_link, other_tags, geom from russia.osm_boundary_all where boundary = 'economic'; ^
@@ -108,7 +108,7 @@ comment on column russia.osm_boundary_economic_region.geom is 'Геометри�
 
 :: Военные округа:
 ogr2ogr ^
- PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  -sql ^
 "drop table if exists russia.osm_boundary_military_district; ^
 create table russia.osm_boundary_military_district as select (row_number() over())::int id, name, wikidata_id, wikipedia_link, other_tags, geom from russia.osm_boundary_all where boundary = 'military_district'; ^
@@ -131,7 +131,7 @@ comment on column russia.osm_boundary_military_district.geom is 'Геометр�
 
 :: Часовые пояса:
 ogr2ogr ^
- PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  -sql ^
 "drop table if exists russia.osm_boundary_time_zone; ^
 create table russia.osm_boundary_time_zone as select (row_number() over())::int id, name, wikidata_id, wikipedia_link, other_tags, geom from russia.osm_boundary_all where boundary = 'timezone'; ^
@@ -156,7 +156,7 @@ comment on column russia.osm_boundary_time_zone.geom is 'Геометрия';"
 
 :: Муниципальные образования первого уровня (Районы, городские и муниципальные округа и ЗАТО):
 ogr2ogr ^
- PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  -sql ^
 "drop table if exists russia.osm_admin_boundary_municipal_level1; ^
 create table russia.osm_admin_boundary_municipal_level1 as select (row_number() over())::int id, name, wikidata_id, wikipedia_link, other_tags, geom from russia.osm_boundary_all where admin_level in (5, 6); ^
@@ -179,7 +179,7 @@ comment on column russia.osm_admin_boundary_municipal_level1.geom is 'Геоме
 
 :: Муниципальные образования второго уровня (Городские и сельские поселения, внутригородские районы):
 ogr2ogr ^
- PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  -sql ^
 "drop table if exists russia.osm_admin_boundary_municipal_level2; ^
 create table russia.osm_admin_boundary_municipal_level2 as select (row_number() over())::int id, name, wikidata_id, wikipedia_link, other_tags, geom from russia.osm_boundary_all where admin_level = 8; ^
@@ -202,7 +202,7 @@ comment on column russia.osm_admin_boundary_municipal_level2.geom is 'Геоме
 
 :: Удаляем russia.osm_boundary:
 ogr2ogr ^
- PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  -sql "drop table if exists russia.osm_boundary"
 
 echo Загрузка Административных границ Начало: %startTime%

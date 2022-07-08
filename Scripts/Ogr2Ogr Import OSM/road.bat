@@ -4,7 +4,7 @@ set startTime=%time%
 :: todo - резать по границам городов, чтобы нормально присваивать id_gis
 :: todo - потестить и замерить новое время
  ogr2ogr ^
- -f PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ -f PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  "D:\apetrov\Projects\Postgres\OSM\PBF\russia-latest.osm.pbf" ^
  -sql "select highway type, name, lanes lane, max_speed, surface, access, null id_gis, other_tags, geometry from lines where highway is not null" ^
  --config OSM_CONFIG_FILE "D:\apetrov\Projects\Postgres\OSM\Osmconf\osmconf.ini" ^
@@ -21,15 +21,15 @@ set startTime=%time%
 
 :: Приведение колонок lanes и maxspeed (почему-то работает только отдельным запросом)
 ogr2ogr ^
- PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  -sql "alter table russia.building_osm alter column lane type smallint using(case when lane ~ E'^\\d+$' then lane::smallint else null end);" 
 ogr2ogr ^
- PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  -sql "alter table russia.building_osm alter column maxspeed type smallint using(case when maxspeed = 'RU:urban' then 60 when maxspeed = 'RU:motorway' then 110 when maxspeed = 'RU:rural' then 90 when maxspeed = 'RU:living_street' then 20 when maxspeed ~ E'^\\d+$' then maxspeed::smallint else null end);"
 
 :: Приведение, обработка, индексы и комментарии
 ogr2ogr ^
- PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  -sql ^
 "/* Проверка геометрии, id_gis и площади */ ^
 update russia.road_osm set geom = st_collectionextract(st_makevalid(st_removerepeatedpoints(st_snaptogrid(geom, 0.0000001))), 2); ^

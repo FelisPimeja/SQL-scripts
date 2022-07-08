@@ -2,7 +2,7 @@ set startTime=%time%
 :: Загрузка зданий
 :: Время выполнения ~ 2 ч.
  ogr2ogr ^
- -f PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ -f PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  "D:\apetrov\Projects\Postgres\OSM\PBF\russia-latest.osm.pbf" ^
  -sql "select (case when building = 'yes' then null else building end) type, name, building_levels level, addr_postcode postcode, null id_gis, addr_street street, addr_housenumber housenumber, other_tags, geometry from multipolygons where building is not null" ^
  --config OSM_CONFIG_FILE "D:\apetrov\Projects\Postgres\OSM\Osmconf\osmconf.ini" ^
@@ -19,12 +19,12 @@ set startTime=%time%
 
 :: Приведение колонки с этажностью (почему-то работает только отдельным запросом)
 ogr2ogr ^
- PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  -sql "alter table russia.building_osm alter column level type smallint  using(case when level ~ E'^\\d+$' then level::smallint else null end);"
 
 :: Приведение, обработка, индексы и комментарии
 ogr2ogr ^
- PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  -sql ^
 "/* Проверка геометрии, id_gis и площади */ ^
 update russia.building_osm set geom = st_collectionextract(st_makevalid(st_removerepeatedpoints(st_snaptogrid(geom, 0.0000001))), 3); ^

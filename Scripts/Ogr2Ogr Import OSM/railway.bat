@@ -4,7 +4,7 @@ set startTime=%time%
 :: todo - резать по границам городов, чтобы нормально присваивать id_gis
 :: todo - прогнать и замерить время проверить ссылки на wiki
  ogr2ogr ^
- -f PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ -f PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  "D:\apetrov\Projects\Postgres\OSM\PBF\russia-latest.osm.pbf" ^
  -sql "select railway type, name, service, null id_gis, other_tags, geometry from lines where railway is not null" ^
  --config OSM_CONFIG_FILE "D:\apetrov\Projects\Postgres\OSM\Osmconf\osmconf.ini" ^
@@ -21,7 +21,7 @@ set startTime=%time%
 
 :: Приведение, обработка, индексы и комментарии
 ogr2ogr ^
- PostgreSQL PG:"dbname=kbpvdb user=editor password=pgeditor host=gisdb.strelkakb.ru port=5433" ^
+ PostgreSQL PG:"dbname=%PGDB% user=%PGUSER% password=%PGPASSWORD host=%PGHOST% port=%PGPORT%" ^
  -sql ^
 "/* Проверка геометрии, id_gis и площади */ ^
 update russia.railway_osm set geom = st_collectionextract(st_makevalid(st_removerepeatedpoints(st_snaptogrid(geom, 0.0000001))), 2); ^
